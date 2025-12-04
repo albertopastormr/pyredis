@@ -1,60 +1,185 @@
+# Redis Implementation in Python
+
 [![progress-banner](https://backend.codecrafters.io/progress/redis/1d22e86b-0b02-4811-820d-928c2a581686)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
 
-This is a starting point for Python solutions to the
-["Build Your Own Redis" Challenge](https://codecrafters.io/challenges/redis).
+A Redis server implementation in Python 3.14+ built for the [CodeCrafters Redis Challenge](https://codecrafters.io/challenges/redis).
 
-In this challenge, you'll build a toy Redis clone that's capable of handling
-basic commands like `PING`, `SET` and `GET`. Along the way we'll learn about
-event loops, the Redis protocol and more.
+This implementation features:
+- ✅ **Async I/O** - Handles thousands of concurrent connections using `asyncio`
+- ✅ **RESP Protocol** - Full RESP (Redis Serialization Protocol) parser and encoder
+- ✅ **Production-Ready** - Clean architecture with separation of concerns
+- ✅ **Well-Tested** - Comprehensive test suite with pytest
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+## 🚀 Quick Start
 
-# Passing the first stage
+### Prerequisites
 
-The entry point for your Redis implementation is in `app/main.py`. Study and
-uncomment the relevant code, and push your changes to pass the first stage:
+Install [uv](https://github.com/astral-sh/uv) (modern Python package manager):
 
-```sh
-git commit -am "pass 1st stage" # any msg
-git push origin master
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-That's all!
+### Installation
 
-# Stage 2 & beyond
+```bash
+# Clone the repository (if not already done)
+# cd codecrafters-redis-python
 
-Note: This section is for stages 2 and beyond.
+# Install dependencies
+uv sync
 
-1. Ensure you have `uv` installed locally
-1. Run `./your_program.sh` to run your Redis server, which is implemented in
-   `app/main.py`.
-1. Commit your changes and run `git push origin master` to submit your solution
-   to CodeCrafters. Test output will be streamed to your terminal.
-
-# Troubleshooting
-
-## module `socket` has no attribute `create_server`
-
-When running your server locally, you might see an error like this:
-
-```
-Traceback (most recent call last):
-  File "/.../python3.7/runpy.py", line 193, in _run_module_as_main
-    "__main__", mod_spec)
-  File "/.../python3.7/runpy.py", line 85, in _run_code
-    exec(code, run_globals)
-  File "/app/app/main.py", line 11, in <module>
-    main()
-  File "/app/app/main.py", line 6, in main
-    s = socket.create_server(("localhost", 6379), reuse_port=True)
-AttributeError: module 'socket' has no attribute 'create_server'
+# Or install with dev dependencies (for testing)
+uv sync --extra dev
 ```
 
-This is because `socket.create_server` was introduced in Python 3.8, and you
-might be running an older version.
+### Running the Server
 
-You can fix this by installing Python 3.8 locally and using that.
+```bash
+./your_program.sh
+```
 
-If you'd like to use a different version of Python, change the `buildpack` value
-in `codecrafters.yml`.
+The server will start on `localhost:6379`.
+
+
+## 🧪 Testing
+
+### Run Test Suite
+
+```bash
+# Install all dependencies including dev dependencies
+uv sync --extra dev
+
+# Run all tests
+uv run pytest
+
+# Run with verbose output
+uv run pytest -v
+
+# Run specific test file
+uv run pytest tests/test_resp_parser.py
+```
+
+### Interactive Client
+
+Use the built-in interactive client to test your server:
+
+```bash
+# Terminal 1: Start server
+./your_program.sh
+
+# Terminal 2: Connect with client
+python3 redis_client.py
+```
+
+**Client features:**
+- Automatic RESP parsing and formatting
+- Human-readable output (like `redis-cli`)
+- Toggle raw RESP mode with `raw` command
+- Syntax: `redis> <command> <args>`
+
+**Example session:**
+```
+✅ Connected to Redis server on localhost:6379
+Type commands like: PING, ECHO hello, or quit to exit
+Use 'raw' to toggle raw RESP output
+------------------------------------------------------------
+
+redis> PING
+"PONG"
+
+redis> ECHO hello world
+"hello"
+
+redis> raw
+Raw mode: ON
+
+redis> PING
+📦 Raw RESP: b'+PONG\r\n'
+"PONG"
+
+redis> quit
+👋 Goodbye!
+```
+
+### Using redis-cli
+
+If you have Redis installed:
+
+```bash
+redis-cli -p 6379 PING
+redis-cli -p 6379 ECHO "hello world"
+```
+
+## 💻 Supported Commands
+
+- ✅ `PING` - Returns PONG
+- ✅ `ECHO <message>` - Returns the message
+- 🚧 More commands coming soon (SET, GET, etc.)
+
+## 🏗️ Architecture
+
+### Async Server (`app/main.py`)
+
+Uses Python's `asyncio` for efficient I/O multiplexing:
+- Single-threaded event loop
+- Non-blocking I/O operations
+- Handles thousands of concurrent clients
+- Graceful connection management
+
+### RESP Protocol (`app/resp.py`)
+
+Clean, stateless implementation with two classes:
+
+**`RESPParser`**
+- Single public method: `parse(data: bytes) -> value`
+- Parses RESP wire format into Python objects
+- Supports all RESP types: strings, integers, arrays, errors
+
+**`RESPEncoder`**
+- Single public method: `encode(value) -> bytes`
+- Automatically determines RESP type from Python type
+- Clean API: just pass Python values, get RESP bytes
+
+Example:
+```python
+from app.resp import RESPParser, RESPEncoder
+
+# Parse incoming data
+command = RESPParser.parse(b"*2\r\n$4\r\nECHO\r\n$3\r\nhey\r\n")
+# → ['ECHO', 'hey']
+
+# Encode responses
+response = RESPEncoder.encode("hey")           # → b'$3\r\nhey\r\n'
+response = RESPEncoder.encode({'ok': 'PONG'})  # → b'+PONG\r\n'
+response = RESPEncoder.encode({'error': 'ERR'}) # → b'-ERR\r\n'
+```
+
+## 🔧 Development
+
+### Adding New Commands
+
+1. Add command handler in `app/main.py` → `handle_command()`
+2. Add tests in `tests/`
+3. Update this README
+
+### Code Style
+
+- **Type hints** where beneficial
+- **Docstrings** for public interfaces
+- **Private methods** prefixed with `_`
+- **Functional approach** - stateless, pure functions where possible
+
+## 📚 Resources
+
+- [RESP Protocol Specification](https://redis.io/docs/reference/protocol-spec/)
+- [CodeCrafters Redis Challenge](https://codecrafters.io/challenges/redis)
+- [Python asyncio Documentation](https://docs.python.org/3/library/asyncio.html)
+
+## 📝 License
+
+This is a CodeCrafters challenge project for educational purposes.
+
+---
+
+Built with ❤️ using Python 3.14 and asyncio

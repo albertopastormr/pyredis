@@ -1,5 +1,7 @@
 import asyncio
 
+from app.resp import RESPParser, RESPEncoder
+
 
 async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     """Handle a single client connection asynchronously."""
@@ -12,12 +14,23 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             if not data:
                 break
             
-            command = data.decode("utf-8").strip()
-            print(f"[{addr}] Received raw: {data}")
-            print(f"[{addr}] Decoded: '{command}'")
+            # Log received data (both raw bytes and preview)
+            print(f"[{addr}] Received {len(data)} bytes")
+            print(f"[{addr}] Raw bytes: {data!r}")
             
-            writer.write(b"+PONG\r\n")
-            await writer.drain()
+            try:
+                command = RESPParser.parse(data)
+                print(f"[{addr}] Parsed command: {command}")
+                
+                response = handle_command(command)
+                writer.write(response)
+                await writer.drain()
+                
+            except ValueError as e:
+                print(f"[{addr}] Parse error: {e}")
+                error_resp = RESPEncoder.encode({'error': f"Parse error: {e}"})
+                writer.write(error_resp)
+                await writer.drain()
             
     except asyncio.CancelledError:
         print(f"[{addr}] Connection cancelled")
@@ -27,6 +40,26 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
         print(f"Closing connection from {addr}")
         writer.close()
         await writer.wait_closed()
+
+
+def handle_command(command):
+    """Process a parsed RESP command and return the response."""
+    if not isinstance(command, list) or len(command) == 0:
+        return RESPEncoder.encode({'error': "Invalid command format"})
+    
+    cmd = command[0].upper() if isinstance(command[0], str) else str(command[0])
+    
+    if cmd == "PING":
+        return RESPEncoder.encode({'ok': "PONG"})
+    
+    elif cmd == "ECHO":
+        if len(command) < 2:
+            return RESPEncoder.encode({'error': "ERR wrong number of arguments for 'echo' command"})
+        message = command[1]
+        return RESPEncoder.encode(message)
+    
+    else:
+        return RESPEncoder.encode({'error': f"ERR unknown command '{cmd}'"})
 
 
 async def main():
