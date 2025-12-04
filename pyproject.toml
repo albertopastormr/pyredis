@@ -1,8 +1,15 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "codecrafters-redis"
 version = "0.1.0"
 requires-python = ">=3.14"
 dependencies = []
+
+[tool.setuptools]
+packages = ["app"]
 
 [project.optional-dependencies]
 dev = [
