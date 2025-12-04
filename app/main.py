@@ -1,6 +1,6 @@
 import asyncio
 
-from app.resp import RESPParser, RESPEncoder
+from .resp import RESPParser, RESPEncoder
 
 
 async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
