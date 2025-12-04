@@ -14,16 +14,8 @@ def main():
         command = data.decode("utf-8").strip()
         print(f"Received raw: {data}")     # Debugging: See the bytes
         print(f"Decoded: '{command}'")    # Debugging: See the clean string
-
-        if command == "PING":
-            client_socket.sendall(b"+PONG\r\n")
-        elif command == "SET":
-            client_socket.sendall(b"+OK\r\n")
-        elif command == "GET":
-            client_socket.sendall(b"+OK\r\n")
-        else:
-            client_socket.sendall(b"-ERR unknown command\r\n")
-
+        
+        client_socket.sendall(b"+PONG\r\n")
     client_socket.close()
     server_socket.close()
 
