@@ -1,24 +1,52 @@
-import socket  # noqa: F401
+import asyncio
 
 
-def main():
-    server_socket = socket.create_server(("localhost", 6379), reuse_port=True)
-    print("Server started on port 6379")
-    client_socket, addr = server_socket.accept()
+async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    """Handle a single client connection asynchronously."""
+    addr = writer.get_extra_info('peername')
     print(f"Connected by {addr}")
+    
+    try:
+        while True:
+            data = await reader.read(1024)
+            if not data:
+                break
+            
+            command = data.decode("utf-8").strip()
+            print(f"[{addr}] Received raw: {data}")
+            print(f"[{addr}] Decoded: '{command}'")
+            
+            writer.write(b"+PONG\r\n")
+            await writer.drain()
+            
+    except asyncio.CancelledError:
+        print(f"[{addr}] Connection cancelled")
+    except Exception as e:
+        print(f"[{addr}] Error: {e}")
+    finally:
+        print(f"Closing connection from {addr}")
+        writer.close()
+        await writer.wait_closed()
 
-    while True:
-        data = client_socket.recv(1024)
-        if not data:
-            break
-        command = data.decode("utf-8").strip()
-        print(f"Received raw: {data}")     # Debugging: See the bytes
-        print(f"Decoded: '{command}'")    # Debugging: See the clean string
-        
-        client_socket.sendall(b"+PONG\r\n")
-    client_socket.close()
-    server_socket.close()
+
+async def main():
+    """Main async server loop."""
+    server = await asyncio.start_server(
+        handle_client,
+        "localhost",
+        6379
+    )
+    
+    addr = server.sockets[0].getsockname()
+    print(f"Server started on {addr} (async mode)")
+    print("Waiting for clients... Press Ctrl+C to stop")
+    
+    async with server:
+        await server.serve_forever()
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nShutting down server...")
