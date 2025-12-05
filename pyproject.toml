@@ -9,7 +9,7 @@ requires-python = ">=3.14"
 dependencies = []
 
 [tool.setuptools]
-packages = ["app"]
+packages = ["app", "app.resp"]
 
 [project.optional-dependencies]
 dev = [

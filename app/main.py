@@ -1,11 +1,6 @@
 import asyncio
 
-try:
-    # When run as module: python -m app.main
-    from app.resp import RESPParser, RESPEncoder
-except ImportError:
-    # When run as script or in different context
-    from .resp import RESPParser, RESPEncoder
+from .resp import RESPParser, RESPEncoder
 
 
 async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
