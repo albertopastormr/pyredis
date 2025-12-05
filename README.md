@@ -127,7 +127,7 @@ Uses Python's `asyncio` for efficient I/O multiplexing:
 - Handles thousands of concurrent clients
 - Graceful connection management
 
-### RESP Protocol (`app/resp.py`)
+### RESP Protocol (`app/resp/protocol.py`)
 
 Clean, stateless implementation with two classes:
 
