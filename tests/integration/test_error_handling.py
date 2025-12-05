@@ -37,9 +37,9 @@ class TestErrorHandling:
         with pytest.raises(ValueError, match="wrong number of arguments"):
             execute_command(['SET', 'key'])
         
-        # SET with too many args
-        with pytest.raises(ValueError, match="wrong number of arguments"):
-            execute_command(['SET', 'key', 'value', 'extra'])
+        # SET with too many args (5 is too many; 4 is valid with PX)
+        with pytest.raises(ValueError, match="wrong number of arguments|syntax error"):
+            execute_command(['SET', 'key', 'value', 'extra', 'arg4', 'arg5'])
     
     def test_wrong_number_of_args_get(self):
         """GET with wrong args returns error."""

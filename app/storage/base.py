@@ -36,6 +36,18 @@ class BaseStorage(ABC):
         pass
     
     @abstractmethod
+    def set_with_ttl(self, key: str, value: str, ttl_ms: int) -> None:
+        """
+        Set key to value with TTL (Time To Live).
+        
+        Args:
+            key: The key to set
+            value: The value to store
+            ttl_ms: Time to live in milliseconds
+        """
+        pass
+    
+    @abstractmethod
     def delete(self, key: str) -> bool:
         """
         Delete a key.

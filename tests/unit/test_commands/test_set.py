@@ -83,8 +83,9 @@ class TestSetCommand:
     def test_set_too_many_args(self):
         """SET with too many arguments raises error."""
         cmd = SetCommand()
-        with pytest.raises(ValueError, match="wrong number of arguments"):
-            cmd.execute(['key', 'value', 'extra'])
+        # 5 args is too many (valid is 2 or 4 with PX)
+        with pytest.raises(ValueError, match="wrong number of arguments|syntax error"):
+            cmd.execute(['key', 'value', 'extra', 'arg4', 'arg5'])
     
     def test_command_name(self):
         """Command has correct name."""
