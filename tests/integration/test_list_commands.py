@@ -443,3 +443,121 @@ class TestLlenIntegration:
         assert result1 == 2
         assert result2 == 2
         assert result3 == 2
+
+
+class TestLpopIntegration:
+    """Test LPOP integration with storage."""
+    
+    def test_lpop_single_element(self):
+        """LPOP removes and returns single element."""
+        execute_command(['RPUSH', 'mylist', 'a', 'b', 'c'])
+        result = execute_command(['LPOP', 'mylist'])
+        
+        assert result == 'a'
+        remaining = execute_command(['LRANGE', 'mylist', '0', '-1'])
+        assert remaining == ['b', 'c']
+    
+    def test_lpop_with_count(self):
+        """LPOP with count removes and returns multiple elements."""
+        execute_command(['RPUSH', 'mylist', 'a', 'b', 'c', 'd', 'e'])
+        result = execute_command(['LPOP', 'mylist', '3'])
+        
+        assert result == ['a', 'b', 'c']
+        remaining = execute_command(['LRANGE', 'mylist', '0', '-1'])
+        assert remaining == ['d', 'e']
+    
+    def test_lpop_count_greater_than_length(self):
+        """LPOP with count > length returns all elements."""
+        execute_command(['RPUSH', 'mylist', 'x', 'y'])
+        result = execute_command(['LPOP', 'mylist', '10'])
+        
+        assert result == ['x', 'y']
+        # List should be deleted
+        length = execute_command(['LLEN', 'mylist'])
+        assert length == 0
+    
+    def test_lpop_nonexistent_key(self):
+        """LPOP on non-existent key returns None."""
+        result = execute_command(['LPOP', 'nonexistent'])
+        assert result is None
+    
+    def test_lpop_until_empty(self):
+        """LPOP until list is empty."""
+        execute_command(['RPUSH', 'mylist', 'a', 'b'])
+        
+        result1 = execute_command(['LPOP', 'mylist'])
+        assert result1 == 'a'
+        
+        result2 = execute_command(['LPOP', 'mylist'])
+        assert result2 == 'b'
+        
+        # List should be empty and deleted
+        result3 = execute_command(['LPOP', 'mylist'])
+        assert result3 is None
+    
+    def test_lpop_returns_bulk_string_in_resp(self):
+        """LPOP (single) returns bulk string in RESP format."""
+        execute_command(['RPUSH', 'list', 'foo'])
+        result = execute_command(['LPOP', 'list'])
+        response = RESPEncoder.encode(result)
+        
+        # Bulk string "foo"
+        assert response == b"$3\r\nfoo\r\n"
+    
+    def test_lpop_returns_array_in_resp(self):
+        """LPOP with count returns array in RESP format."""
+        execute_command(['RPUSH', 'list', 'a', 'b', 'c'])
+        result = execute_command(['LPOP', 'list', '2'])
+        response = RESPEncoder.encode(result)
+        
+        # Array of 2 bulk strings
+        assert response == b"*2\r\n$1\r\na\r\n$1\r\nb\r\n"
+    
+    def test_lpop_returns_null_in_resp(self):
+        """LPOP on non-existent returns null in RESP format."""
+        result = execute_command(['LPOP', 'nonexistent'])
+        response = RESPEncoder.encode(result)
+        
+        # Null bulk string
+        assert response == b"$-1\r\n"
+    
+    def test_lpop_on_string_key_raises_error(self):
+        """LPOP on a string key raises WRONGTYPE."""
+        execute_command(['SET', 'mykey', 'string value'])
+        
+        with pytest.raises(ValueError, match="WRONGTYPE"):
+            execute_command(['LPOP', 'mykey'])
+    
+    def test_lpop_no_args(self):
+        """LPOP without arguments raises error."""
+        with pytest.raises(ValueError, match="wrong number of arguments"):
+            execute_command(['LPOP'])
+    
+    def test_lpop_too_many_args(self):
+        """LPOP with too many arguments raises error."""
+        with pytest.raises(ValueError, match="wrong number of arguments"):
+            execute_command(['LPOP', 'key', '1', 'extra'])
+    
+    def test_lpop_invalid_count(self):
+        """LPOP with non-integer count raises error."""
+        execute_command(['RPUSH', 'mylist', 'a'])
+        
+        with pytest.raises(ValueError, match="not an integer"):
+            execute_command(['LPOP', 'mylist', 'abc'])
+    
+    def test_lpop_negative_count(self):
+        """LPOP with negative count raises error."""
+        execute_command(['RPUSH', 'mylist', 'a'])
+        
+        with pytest.raises(ValueError, match="out of range"):
+            execute_command(['LPOP', 'mylist', '-1'])
+    
+    def test_lpop_case_insensitive(self):
+        """LPOP is case-insensitive."""
+        execute_command(['RPUSH', 'list', 'a', 'b'])
+        
+        result1 = execute_command(['lpop', 'list'])
+        result2 = execute_command(['LPOP', 'list'])
+        
+        assert result1 == 'a'
+        assert result2 == 'b'

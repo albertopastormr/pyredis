@@ -61,6 +61,25 @@ class BaseStorage(ABC):
         pass
     
     @abstractmethod
+    def llen(self, key: str) -> int:
+        """Get list length. Returns 0 if key doesn't exist."""
+        pass
+    
+    @abstractmethod
+    def lpop(self, key: str, count: int = 1) -> Optional[List[str]]:
+        """
+        Remove and return elements from the left of the list.
+        
+        Args:
+            key: The list key
+            count: Number of elements to pop (default 1)
+        
+        Returns:
+            List of popped elements, or None if key doesn't exist
+        """
+        pass
+    
+    @abstractmethod
     def exists(self, key: str) -> bool:
         """
         Check if key exists.
@@ -87,6 +106,20 @@ class BaseStorage(ABC):
             key: The list key
             values: Values to append
         
+        Returns:
+            Length of list after push
+        """
+        pass
+    
+    @abstractmethod 
+    def lpush(self, key: str, *values: str) -> int:
+        """
+        Prepend values to list.
+
+        Args:
+            key: The list key
+            values: Values to prepend
+
         Returns:
             Length of list after push
         """

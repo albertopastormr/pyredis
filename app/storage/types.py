@@ -57,6 +57,30 @@ class RedisList(RedisValue):
         self.values = items + self.values   
         return len(self.values)
     
+    def lpop(self, count: int = 1) -> list:
+        """
+        Remove and return elements from the left.
+        
+        Args:
+            count: Number of elements to pop (default 1)
+        
+        Returns:
+            List of popped elements, or empty list if count is 0
+        """
+        if count <= 0:
+            return []
+        
+        # If count >= length, pop all elements
+        if count >= len(self.values):
+            result = self.values[:]
+            self.values = []
+            return result
+        
+        # Pop 'count' elements from the left
+        result = self.values[:count]
+        self.values = self.values[count:]
+        return result
+    
     def lrange(self, start: int, stop: int) -> List[str]:
         """
         Get range of elements.

@@ -224,6 +224,31 @@ class InMemoryStorage(BaseStorage):
         
         return self._data[key].length()
     
+    @require_type(RedisType.LIST)
+    def lpop(self, key: str, count: int = 1) -> Optional[List[str]]:
+        """
+        Remove and return elements from the left of the list.
+        
+        Decorator ensures type is LIST if key exists.
+        Time complexity: O(N) where N is count
+        
+        Args:
+            key: The list key
+            count: Number of elements to pop (default 1)
+        
+        Returns:
+            List of popped elements, or None if key doesn't exist
+        """
+        if key not in self._data:
+            return None
+        
+        result = self._data[key].lpop(count)
+        
+        if len(self._data[key]) == 0:
+            del self._data[key]
+        
+        return result
+    
     def __len__(self) -> int:
         """Return number of keys."""
         return len(self._data)
