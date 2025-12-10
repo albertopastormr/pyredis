@@ -203,6 +203,27 @@ class InMemoryStorage(BaseStorage):
         
         return self._data[key].lrange(start, stop)
     
+    @require_type(RedisType.LIST)
+    def llen(self, key: str) -> int:
+        """
+        Get list length.
+        
+        Time complexity: O(1)
+        
+        Rules:
+        - Returns 0 if key doesn't exist
+        
+        Args:
+            key: The list key
+        
+        Returns:
+            Length of list, 0 if key doesn't exist
+        """
+        if key not in self._data:
+            return 0
+        
+        return self._data[key].length()
+    
     def __len__(self) -> int:
         """Return number of keys."""
         return len(self._data)

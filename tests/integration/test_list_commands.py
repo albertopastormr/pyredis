@@ -366,3 +366,80 @@ class TestRpushErrors:
         
         with pytest.raises(ValueError, match="not an integer"):
             execute_command(['LRANGE', 'mylist', '0', 'xyz'])
+
+
+class TestLlenIntegration:
+    """Test LLEN integration with storage."""
+    
+    def test_llen_nonexistent_key(self):
+        """LLEN returns 0 for non-existent key."""
+        result = execute_command(['LLEN', 'nonexistent'])
+        assert result == 0
+    
+    def test_llen_after_rpush(self):
+        """LLEN returns correct length after RPUSH."""
+        execute_command(['RPUSH', 'mylist', 'a', 'b', 'c'])
+        result = execute_command(['LLEN', 'mylist'])
+        assert result == 3
+    
+    def test_llen_after_lpush(self):
+        """LLEN returns correct length after LPUSH."""
+        execute_command(['LPUSH', 'mylist', 'x', 'y', 'z'])
+        result = execute_command(['LLEN', 'mylist'])
+        assert result == 3
+    
+    def test_llen_after_mixed_operations(self):
+        """LLEN returns correct length after mixed operations."""
+        execute_command(['RPUSH', 'mylist', 'a', 'b'])
+        execute_command(['LPUSH', 'mylist', 'x'])
+        execute_command(['RPUSH', 'mylist', 'c'])
+        result = execute_command(['LLEN', 'mylist'])
+        assert result == 4
+    
+    def test_llen_single_element(self):
+        """LLEN returns 1 for single element list."""
+        execute_command(['RPUSH', 'mylist', 'only'])
+        result = execute_command(['LLEN', 'mylist'])
+        assert result == 1
+    
+    def test_llen_returns_integer_in_resp(self):
+        """LLEN returns integer in RESP format."""
+        execute_command(['RPUSH', 'list', 'a', 'b', 'c'])
+        result = execute_command(['LLEN', 'list'])
+        response = RESPEncoder.encode(result)
+        assert response == b":3\r\n"
+    
+    def test_llen_different_lists(self):
+        """LLEN on different lists are independent."""
+        execute_command(['RPUSH', 'list1', 'a', 'b', 'c'])
+        execute_command(['RPUSH', 'list2', 'x'])
+        result1 = execute_command(['LLEN', 'list1'])
+        result2 = execute_command(['LLEN', 'list2'])
+        assert result1 == 3
+        assert result2 == 1
+    
+    def test_llen_on_string_key_raises_error(self):
+        """LLEN on a string key raises WRONGTYPE."""
+        execute_command(['SET', 'mykey', 'string value'])
+        with pytest.raises(ValueError, match="WRONGTYPE"):
+            execute_command(['LLEN', 'mykey'])
+    
+    def test_llen_no_args(self):
+        """LLEN without arguments raises error."""
+        with pytest.raises(ValueError, match="wrong number of arguments"):
+            execute_command(['LLEN'])
+    
+    def test_llen_too_many_args(self):
+        """LLEN with too many arguments raises error."""
+        with pytest.raises(ValueError, match="wrong number of arguments"):
+            execute_command(['LLEN', 'key', 'extra'])
+    
+    def test_llen_case_insensitive(self):
+        """LLEN is case-insensitive."""
+        execute_command(['RPUSH', 'list', 'a', 'b'])
+        result1 = execute_command(['llen', 'list'])
+        result2 = execute_command(['LLEN', 'list'])
+        result3 = execute_command(['LlEn', 'list'])
+        assert result1 == 2
+        assert result2 == 2
+        assert result3 == 2

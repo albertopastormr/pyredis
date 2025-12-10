@@ -94,7 +94,12 @@ class RedisList(RedisValue):
         
         return self.values[start:stop+1]
     
+    def length(self) -> int:
+        """Get list length for LLEN command."""
+        return len(self.values)
+    
     def __len__(self) -> int:
+        """Support len() built-in."""
         return len(self.values)
     
     def __repr__(self) -> str:
