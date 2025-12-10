@@ -126,6 +126,46 @@ class TestLrangeIntegration:
         
         # Array of 2 bulk strings
         assert response == b"*2\r\n$3\r\nfoo\r\n$3\r\nbar\r\n"
+    
+    def test_lrange_negative_indices(self):
+        """LRANGE supports negative indices."""
+        execute_command(['RPUSH', 'mylist', 'a', 'b', 'c', 'd', 'e'])
+        
+        # Get last element
+        result = execute_command(['LRANGE', 'mylist', '-1', '-1'])
+        assert result == ['e']
+        
+        # Get last 3 elements
+        result = execute_command(['LRANGE', 'mylist', '-3', '-1'])
+        assert result == ['c', 'd', 'e']
+        
+        # Get full list with negative
+        result = execute_command(['LRANGE', 'mylist', '0', '-1'])
+        assert result == ['a', 'b', 'c', 'd', 'e']
+    
+    def test_lrange_mixed_indices(self):
+        """LRANGE supports mixed positive and negative indices."""
+        execute_command(['RPUSH', 'mylist', 'a', 'b', 'c', 'd', 'e'])
+        
+        # Positive start, negative stop
+        result = execute_command(['LRANGE', 'mylist', '1', '-2'])
+        assert result == ['b', 'c', 'd']
+        
+        # Negative start, positive stop
+        result = execute_command(['LRANGE', 'mylist', '-4', '3'])
+        assert result == ['b', 'c', 'd']
+    
+    def test_lrange_negative_out_of_bounds(self):
+        """LRANGE handles out of bounds negative indices."""
+        execute_command(['RPUSH', 'mylist', 'a', 'b', 'c'])
+        
+        # Start too negative
+        result = execute_command(['LRANGE', 'mylist', '-10', '-1'])
+        assert result == []
+        
+        # Reversed (stop before start after conversion)
+        result = execute_command(['LRANGE', 'mylist', '-1', '-3'])
+        assert result == []
 
 
 class TestListTypeConflicts:
