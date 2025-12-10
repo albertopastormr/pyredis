@@ -1,8 +1,9 @@
 """In-memory storage implementation using Python dict."""
 
 import time
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from .base import BaseStorage
+from .types import RedisValue, RedisString, RedisList, RedisType, require_type
 
 
 class InMemoryStorage(BaseStorage):
@@ -12,11 +13,12 @@ class InMemoryStorage(BaseStorage):
     This is the primary storage mechanism - same as real Redis.
     Thread-safe with asyncio (single-threaded event loop + GIL).
     Supports TTL (Time To Live) for key expiration.
+    Supports multiple data types: strings, lists.
     """
     
     def __init__(self):
         """Initialize empty storage."""
-        self._data: Dict[str, str] = {}
+        self._data: Dict[str, RedisValue] = {}
         self._expiry: Dict[str, float] = {}  # key -> monotonic expiration time
     
     def _is_expired(self, key: str) -> bool:
@@ -25,6 +27,7 @@ class InMemoryStorage(BaseStorage):
             return False
         return time.monotonic() > self._expiry[key]
     
+    @require_type(RedisType.STRING)
     def get(self, key: str) -> Optional[str]:
         """
         Get value by key.
@@ -46,19 +49,20 @@ class InMemoryStorage(BaseStorage):
             del self._expiry[key]
             return None
         
-        return self._data.get(key)
+        return self._data[key].value
     
     def set(self, key: str, value: str) -> None:
         """
         Set key to value.
         
+        Overwrites any existing type.
         Time complexity: O(1) average case
         
         Args:
             key: The key to set
             value: The value to store
         """
-        self._data[key] = value
+        self._data[key] = RedisString(value)
         if key in self._expiry:
             del self._expiry[key]
     
@@ -74,7 +78,7 @@ class InMemoryStorage(BaseStorage):
             value: The value to store
             ttl_ms: Time to live in milliseconds
         """
-        self._data[key] = value
+        self._data[key] = RedisString(value)
         # Use monotonic time (never goes backwards)
         self._expiry[key] = time.monotonic() + (ttl_ms / 1000.0)
     
@@ -127,6 +131,52 @@ class InMemoryStorage(BaseStorage):
         """
         self._data.clear()
         self._expiry.clear()
+    
+    @require_type(RedisType.LIST)
+    def rpush(self, key: str, *values: str) -> int:
+        """
+        Append values to list.
+        
+        Creates list if it doesn't exist.
+        Time complexity: O(N) where N is number of values
+        
+        Args:
+            key: The list key
+            values: Values to append
+        
+        Returns:
+            Length of list after push
+        """
+        if key in self._data:
+            # Existing list - type verified by decorator
+            return self._data[key].rpush(*values)
+        else:
+            # Create new list
+            new_list = RedisList()
+            length = new_list.rpush(*values)
+            self._data[key] = new_list
+            return length
+    
+    @require_type(RedisType.LIST)
+    def lrange(self, key: str, start: int, stop: int) -> List[str]:
+        """
+        Get list elements in range.
+        
+        Time complexity: O(S+N) where S is start offset and N is range size
+        
+        Args:
+            key: The list key
+            start: Start index
+            stop: Stop index (inclusive)
+        
+        Returns:
+            List of elements in range, empty if key doesn't exist
+        """
+        if key not in self._data:
+            return []
+        
+        # Type verified by decorator
+        return self._data[key].lrange(start, stop)
     
     def __len__(self) -> int:
         """Return number of keys."""

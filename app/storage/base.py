@@ -1,7 +1,7 @@
 """Base storage interface."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, Any
+from typing import Optional, List
 
 
 class BaseStorage(ABC):
@@ -76,4 +76,33 @@ class BaseStorage(ABC):
     @abstractmethod
     def clear(self) -> None:
         """Clear all data."""
+        pass
+    
+    @abstractmethod
+    def rpush(self, key: str, *values: str) -> int:
+        """
+        Append values to list.
+        
+        Args:
+            key: The list key
+            values: Values to append
+        
+        Returns:
+            Length of list after push
+        """
+        pass
+    
+    @abstractmethod
+    def lrange(self, key: str, start: int, stop: int) -> List[str]:
+        """
+        Get list elements in range.
+        
+        Args:
+            key: The list key
+            start: Start index
+            stop: Stop index (inclusive)
+        
+        Returns:
+            List of elements in range
+        """
         pass

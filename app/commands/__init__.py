@@ -10,6 +10,7 @@ from .ping import PingCommand
 from .echo import EchoCommand
 from .set import SetCommand
 from .get import GetCommand
+from .rpush import RpushCommand
 
 
 class CommandRegistry:
@@ -64,6 +65,7 @@ CommandRegistry.register(PingCommand)
 CommandRegistry.register(EchoCommand)
 CommandRegistry.register(SetCommand)
 CommandRegistry.register(GetCommand)
+CommandRegistry.register(RpushCommand)
 
 
-__all__ = ['CommandRegistry', 'BaseCommand', 'PingCommand', 'EchoCommand', 'SetCommand', 'GetCommand']
+__all__ = ['CommandRegistry', 'BaseCommand', 'PingCommand', 'EchoCommand', 'SetCommand', 'GetCommand', 'RpushCommand']

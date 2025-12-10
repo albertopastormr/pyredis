@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.resp import RESPParser, RESPEncoder
+from app.resp import RESPParser
 from app.handler import execute_command
 
 

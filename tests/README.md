@@ -168,7 +168,7 @@ def test_my_workflow():
 
 ### 1. Isolation (Unit Tests)
 - No shared state between tests
-- Use `setup_method()` for cleanup
+- Use `@pytest.fixture(autouse=True)` for automatic cleanup
 - Mock external dependencies
 
 ### 2. Realistic (Integration Tests)
@@ -215,6 +215,14 @@ def test_set_returns_ok():
 ### Better Debugging
 - Unit test fails? Issue in component
 - Integration test fails? Issue in integration
+
+### ✅ Do:
+- Mirror app structure
+- One test class per class
+- Descriptive test names
+- Test one thing per test
+- Use fixtures for common setup
+- Use `@pytest.fixture(autouse=True)` for cleanup
 
 ### Scalability
 - Easy to add new test categories
