@@ -50,6 +50,13 @@ class RedisList(RedisValue):
         self.values.extend(items)
         return len(self.values)
     
+    def lpush(self, *items: str) -> int:
+        """Prepend items and return new length."""
+        items = list(items)
+        items.reverse() # Reverse order to maintain original order
+        self.values = items + self.values   
+        return len(self.values)
+    
     def lrange(self, start: int, stop: int) -> List[str]:
         """
         Get range of elements.

@@ -61,6 +61,79 @@ class TestRpushIntegration:
         assert result2 == 2  # list2 has 2 elements
 
 
+class TestLpushIntegration:
+    """Test LPUSH integration with storage."""
+    
+    def test_lpush_creates_new_list(self):
+        """LPUSH creates a new list with first element."""
+        result = execute_command(['LPUSH', 'mylist', 'foo'])
+        
+        assert result == 1
+    
+    def test_lpush_prepends_to_list(self):
+        """LPUSH prepends to existing list."""
+        execute_command(['LPUSH', 'mylist', 'second'])
+        result = execute_command(['LPUSH', 'mylist', 'first'])
+        
+        assert result == 2
+        
+        # Verify order
+        items = execute_command(['LRANGE', 'mylist', '0', '-1'])
+        assert items == ['first', 'second']
+    
+    def test_lpush_multiple_values(self):
+        """LPUSH with multiple values in one command."""
+        result = execute_command(['LPUSH', 'mylist', 'a', 'b', 'c'])
+        
+        assert result == 3
+        
+        # Multiple values are prepended in order: c, b, a
+        items = execute_command(['LRANGE', 'mylist', '0', '-1'])
+        assert items == ['c', 'b', 'a']
+    
+    def test_lpush_returns_integer_in_resp(self):
+        """LPUSH returns integer in RESP format."""
+        result = execute_command(['LPUSH', 'list', 'value'])
+        response = RESPEncoder.encode(result)
+        
+        # Integer 1 encoded as :1\r\n
+        assert response == b":1\r\n"
+    
+    def test_lpush_increments_length(self):
+        """Multiple LPUSH calls increment length."""
+        assert execute_command(['LPUSH', 'mylist', 'a']) == 1
+        assert execute_command(['LPUSH', 'mylist', 'b']) == 2
+        assert execute_command(['LPUSH', 'mylist', 'c']) == 3
+        assert execute_command(['LPUSH', 'mylist', 'd']) == 4
+    
+    def test_lpush_with_empty_string(self):
+        """LPUSH handles empty string values."""
+        result = execute_command(['LPUSH', 'mylist', ''])
+        
+        assert result == 1
+    
+    def test_lpush_and_rpush_combination(self):
+        """LPUSH and RPUSH work together correctly."""
+        execute_command(['RPUSH', 'mylist', 'd', 'e'])  # [d, e]
+        execute_command(['LPUSH', 'mylist', 'b', 'c'])  # [c, b, d, e]
+        execute_command(['LPUSH', 'mylist', 'a'])       # [a, c, b, d, e]
+        execute_command(['RPUSH', 'mylist', 'f'])       # [a, c, b, d, e, f]
+        
+        items = execute_command(['LRANGE', 'mylist', '0', '-1'])
+        assert items == ['a', 'c', 'b', 'd', 'e', 'f']
+    
+    def test_lpush_different_lists(self):
+        """LPUSH on different lists are independent."""
+        execute_command(['LPUSH', 'list1', 'a', 'b'])
+        execute_command(['LPUSH', 'list2', 'x'])
+        
+        result1 = execute_command(['LPUSH', 'list1', 'c'])
+        result2 = execute_command(['LPUSH', 'list2', 'y'])
+        
+        assert result1 == 3  # list1 has 3 elements
+        assert result2 == 2  # list2 has 2 elements
+
+
 class TestLrangeIntegration:
     """Test LRANGE integration with storage."""
     
@@ -226,6 +299,33 @@ class TestRpushErrors:
         result1 = execute_command(['rpush', 'list', 'a'])
         result2 = execute_command(['RPUSH', 'list', 'b'])
         result3 = execute_command(['RpUsH', 'list', 'c'])
+        
+        assert result1 == 1
+        assert result2 == 2
+        assert result3 == 3
+    
+    def test_lpush_on_string_key_raises_error(self):
+        """LPUSH on a string key raises WRONGTYPE."""
+        execute_command(['SET', 'mykey', 'string value'])
+        
+        with pytest.raises(ValueError, match="WRONGTYPE"):
+            execute_command(['LPUSH', 'mykey', 'list value'])
+    
+    def test_lpush_no_args(self):
+        """LPUSH without arguments raises error."""
+        with pytest.raises(ValueError, match="wrong number of arguments"):
+            execute_command(['LPUSH'])
+    
+    def test_lpush_one_arg(self):
+        """LPUSH with only key raises error."""
+        with pytest.raises(ValueError, match="wrong number of arguments"):
+            execute_command(['LPUSH', 'key'])
+    
+    def test_lpush_case_insensitive(self):
+        """LPUSH is case-insensitive."""
+        result1 = execute_command(['lpush', 'list', 'a'])
+        result2 = execute_command(['LPUSH', 'list', 'b'])
+        result3 = execute_command(['LpUsH', 'list', 'c'])
         
         assert result1 == 1
         assert result2 == 2

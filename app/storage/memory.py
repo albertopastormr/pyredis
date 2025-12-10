@@ -154,6 +154,29 @@ class InMemoryStorage(BaseStorage):
             length = new_list.rpush(*values)
             self._data[key] = new_list
             return length
+
+    @require_type(RedisType.LIST)
+    def lpush(self, key: str, *values: str) -> int:
+        """
+        Prepend values to list.
+        
+        Creates list if it doesn't exist.
+        Time complexity: O(N) where N is number of values
+        
+        Args:
+            key: The list key
+            values: Values to prepend
+        
+        Returns:
+            Length of list after push
+        """
+        if key in self._data:
+            return self._data[key].lpush(*values)
+        else:
+            new_list = RedisList()
+            length = new_list.lpush(*values)
+            self._data[key] = new_list
+            return length
     
     @require_type(RedisType.LIST)
     def lrange(self, key: str, start: int, stop: int) -> List[str]:
