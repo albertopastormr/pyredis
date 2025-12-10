@@ -148,10 +148,8 @@ class InMemoryStorage(BaseStorage):
             Length of list after push
         """
         if key in self._data:
-            # Existing list - type verified by decorator
             return self._data[key].rpush(*values)
         else:
-            # Create new list
             new_list = RedisList()
             length = new_list.rpush(*values)
             self._data[key] = new_list
@@ -162,11 +160,17 @@ class InMemoryStorage(BaseStorage):
         """
         Get list elements in range.
         
+        Decorator ensures type is LIST if key exists.
         Time complexity: O(S+N) where S is start offset and N is range size
+        
+        Rules:
+        - Returns empty list if key doesn't exist
+        - If stop > length, treats as length (returns till end)
+        - If start > stop or start > length, returns empty list
         
         Args:
             key: The list key
-            start: Start index
+            start: Start index (inclusive)
             stop: Stop index (inclusive)
         
         Returns:
@@ -175,7 +179,6 @@ class InMemoryStorage(BaseStorage):
         if key not in self._data:
             return []
         
-        # Type verified by decorator
         return self._data[key].lrange(start, stop)
     
     def __len__(self) -> int:

@@ -51,9 +51,31 @@ class RedisList(RedisValue):
         return len(self.values)
     
     def lrange(self, start: int, stop: int) -> List[str]:
-        """Get range of elements."""
-        # Handle negative indices like Python
-        return self.values[start:stop+1] if stop >= 0 else self.values[start:]
+        """
+        Get range of elements.
+        
+        Rules:
+        - If start > length, return empty list
+        - If stop > length, treat as length
+        - If start > stop, return empty list
+        - Both indices are inclusive
+        """
+        length = len(self.values)
+        
+        # If start is beyond list, return empty
+        if start > length - 1 or start < 0 and abs(start) > length:
+            return []
+        
+        # If start > stop, return empty
+        if start > stop and stop >= 0:
+            return []
+        
+        # Clamp stop to length - 1
+        if stop >= length:
+            stop = length - 1
+        
+        # Return slice (stop+1 because slicing is exclusive at end)
+        return self.values[start:stop+1]
     
     def __len__(self) -> int:
         return len(self.values)

@@ -61,6 +61,73 @@ class TestRpushIntegration:
         assert result2 == 2  # list2 has 2 elements
 
 
+class TestLrangeIntegration:
+    """Test LRANGE integration with storage."""
+    
+    def test_lrange_basic(self):
+        """LRANGE returns elements in range."""
+        execute_command(['RPUSH', 'mylist', 'a', 'b', 'c', 'd', 'e'])
+        
+        result = execute_command(['LRANGE', 'mylist', '0', '2'])
+        assert result == ['a', 'b', 'c']
+    
+    def test_lrange_stop_greater_than_length(self):
+        """LRANGE treats stop > length as length."""
+        execute_command(['RPUSH', 'mylist', 'a', 'b', 'c'])
+        
+        result = execute_command(['LRANGE', 'mylist', '0', '10'])
+        assert result == ['a', 'b', 'c']
+    
+    def test_lrange_start_greater_than_stop(self):
+        """LRANGE returns empty when start > stop."""
+        execute_command(['RPUSH', 'mylist', 'a', 'b', 'c', 'd'])
+        
+        result = execute_command(['LRANGE', 'mylist', '3', '1'])
+        assert result == []
+    
+    def test_lrange_start_greater_than_length(self):
+        """LRANGE returns empty when start > length."""
+        execute_command(['RPUSH', 'mylist', 'a', 'b', 'c'])
+        
+        result = execute_command(['LRANGE', 'mylist', '10', '20'])
+        assert result == []
+    
+    def test_lrange_nonexistent_key(self):
+        """LRANGE on non-existent key returns empty list."""
+        result = execute_command(['LRANGE', 'nonexistent', '0', '5'])
+        assert result == []
+    
+    def test_lrange_full_list(self):
+        """LRANGE can return full list."""
+        execute_command(['RPUSH', 'mylist', 'a', 'b', 'c', 'd'])
+        
+        result = execute_command(['LRANGE', 'mylist', '0', '10'])
+        assert result == ['a', 'b', 'c', 'd']
+    
+    def test_lrange_middle_range(self):
+        """LRANGE can return middle portion."""
+        execute_command(['RPUSH', 'mylist', 'a', 'b', 'c', 'd', 'e'])
+        
+        result = execute_command(['LRANGE', 'mylist', '1', '3'])
+        assert result == ['b', 'c', 'd']
+    
+    def test_lrange_single_element(self):
+        """LRANGE can return single element."""
+        execute_command(['RPUSH', 'mylist', 'a', 'b', 'c'])
+        
+        result = execute_command(['LRANGE', 'mylist', '1', '1'])
+        assert result == ['b']
+    
+    def test_lrange_returns_array_in_resp(self):
+        """LRANGE returns array in RESP format."""
+        execute_command(['RPUSH', 'list', 'foo', 'bar'])
+        result = execute_command(['LRANGE', 'list', '0', '1'])
+        response = RESPEncoder.encode(result)
+        
+        # Array of 2 bulk strings
+        assert response == b"*2\r\n$3\r\nfoo\r\n$3\r\nbar\r\n"
+
+
 class TestListTypeConflicts:
     """Test type conflicts between lists and other types."""
     
@@ -119,3 +186,39 @@ class TestRpushErrors:
         assert result1 == 1
         assert result2 == 2
         assert result3 == 3
+    
+    def test_lrange_on_string_key_raises_error(self):
+        """LRANGE on a string key raises WRONGTYPE."""
+        execute_command(['SET', 'mykey', 'string value'])
+        
+        with pytest.raises(ValueError, match="WRONGTYPE"):
+            execute_command(['LRANGE', 'mykey', '0', '5'])
+    
+    def test_lrange_no_args(self):
+        """LRANGE without arguments raises error."""
+        with pytest.raises(ValueError, match="wrong number of arguments"):
+            execute_command(['LRANGE'])
+    
+    def test_lrange_one_arg(self):
+        """LRANGE with only key raises error."""
+        with pytest.raises(ValueError, match="wrong number of arguments"):
+            execute_command(['LRANGE', 'key'])
+    
+    def test_lrange_two_args(self):
+        """LRANGE with only key and start raises error."""
+        with pytest.raises(ValueError, match="wrong number of arguments"):
+            execute_command(['LRANGE', 'key', '0'])
+    
+    def test_lrange_invalid_start(self):
+        """LRANGE with non-integer start raises error."""
+        execute_command(['RPUSH', 'mylist', 'a'])
+        
+        with pytest.raises(ValueError, match="not an integer"):
+            execute_command(['LRANGE', 'mylist', 'abc', '5'])
+    
+    def test_lrange_invalid_stop(self):
+        """LRANGE with non-integer stop raises error."""
+        execute_command(['RPUSH', 'mylist', 'a'])
+        
+        with pytest.raises(ValueError, match="not an integer"):
+            execute_command(['LRANGE', 'mylist', '0', 'xyz'])

@@ -11,6 +11,7 @@ from .echo import EchoCommand
 from .set import SetCommand
 from .get import GetCommand
 from .rpush import RpushCommand
+from .lrange import LrangeCommand
 
 
 class CommandRegistry:
@@ -66,6 +67,7 @@ CommandRegistry.register(EchoCommand)
 CommandRegistry.register(SetCommand)
 CommandRegistry.register(GetCommand)
 CommandRegistry.register(RpushCommand)
+CommandRegistry.register(LrangeCommand)
 
 
-__all__ = ['CommandRegistry', 'BaseCommand', 'PingCommand', 'EchoCommand', 'SetCommand', 'GetCommand', 'RpushCommand']
+__all__ = ['CommandRegistry', 'BaseCommand', 'PingCommand', 'EchoCommand', 'SetCommand', 'GetCommand', 'RpushCommand', 'LrangeCommand']
