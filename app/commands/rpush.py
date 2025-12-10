@@ -37,4 +37,4 @@ class RpushCommand(BaseCommand):
         storage = get_storage()
         length = storage.rpush(key, *values)
         
-        return length  # Integer response
+        return length

@@ -160,7 +160,6 @@ class InMemoryStorage(BaseStorage):
         """
         Get list elements in range.
         
-        Decorator ensures type is LIST if key exists.
         Time complexity: O(S+N) where S is start offset and N is range size
         
         Rules:

@@ -68,10 +68,15 @@ class RedisList(RedisValue):
         
         if start < 0:
             start = length + start
+            if start < 0:
+                start = 0
+        
         if stop < 0:
             stop = length + stop
+            if stop < 0:
+                stop = 0
         
-        if start < 0 or start >= length:
+        if start >= length:
             return []
         
         if stop < start:

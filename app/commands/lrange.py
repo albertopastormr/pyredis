@@ -45,4 +45,4 @@ class LrangeCommand(BaseCommand):
         storage = get_storage()
         result = storage.lrange(key, start, stop)
         
-        return result  # Returns list
+        return result

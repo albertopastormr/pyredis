@@ -159,9 +159,13 @@ class TestLrangeIntegration:
         """LRANGE handles out of bounds negative indices."""
         execute_command(['RPUSH', 'mylist', 'a', 'b', 'c'])
         
-        # Start too negative
+        # Start too negative - should clamp to 0 and return from start
         result = execute_command(['LRANGE', 'mylist', '-10', '-1'])
-        assert result == []
+        assert result == ['a', 'b', 'c']
+        
+        # Stop too negative - should clamp to 0
+        result = execute_command(['LRANGE', 'mylist', '0', '-10'])
+        assert result == ['a']
         
         # Reversed (stop before start after conversion)
         result = execute_command(['LRANGE', 'mylist', '-1', '-3'])
