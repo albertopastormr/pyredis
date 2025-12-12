@@ -1,10 +1,12 @@
 """BLPOP command implementation."""
 
 import time
+import asyncio
 from typing import Any, List, Optional
 from .base import BaseCommand
 from app.storage import get_storage
 from app.exceptions import WrongTypeError
+from app.blocking import register_waiter, unregister_waiter
 
 
 class BlpopCommand(BaseCommand):
@@ -36,9 +38,9 @@ class BlpopCommand(BaseCommand):
             pass
         return None
     
-    def execute(self, args: List[str]) -> Any:
+    async def execute(self, args: List[str]) -> Any:
         """
-        Execute BLPOP command.
+        Execute BLPOP command asynchronously (event-driven, no polling).
         
         Args:
             args: [key, timeout]
@@ -50,7 +52,6 @@ class BlpopCommand(BaseCommand):
         
         key = args[0]
         
-        # Parse timeout
         try:
             timeout = float(args[1])
             if timeout < 0:
@@ -67,25 +68,25 @@ class BlpopCommand(BaseCommand):
         if result is not None:
             return result
         
-        start_time = time.monotonic()
-        poll_interval = 0.1  # Poll every 100ms
+        # List is empty - wait for notification
+        event = asyncio.Event()
+        register_waiter(key, event)
         
-        while True:
+        try:
             if timeout > 0:
-                elapsed = time.monotonic() - start_time
-                if elapsed >= timeout:
-                    return None
-            
-            result = self._try_pop(storage, key)
-            if result is not None:
-                return result
-            
-            if timeout > 0:
-                remaining = timeout - (time.monotonic() - start_time)
-                sleep_time = min(poll_interval, remaining)
-                if sleep_time > 0:
-                    time.sleep(sleep_time)
+                # Wait with timeout
+                await asyncio.wait_for(event.wait(), timeout=timeout)
             else:
-                time.sleep(poll_interval)
-                if time.monotonic() - start_time > 3600:  # 1 hour max
-                    return None
+                # Wait indefinitely
+                await event.wait()
+            
+            # We were notified - try to pop
+            result = self._try_pop(storage, key)
+            return result or None
+            
+        except asyncio.TimeoutError:
+            # Timeout expired
+            return None
+        finally:
+            # Always unregister
+            unregister_waiter(key, event)

@@ -20,7 +20,7 @@ class SetCommand(BaseCommand):
     def name(self) -> str:
         return "SET"
     
-    def execute(self, args: List[str]) -> Any:
+    async def execute(self, args: List[str]) -> Any:
         """
         Execute SET command.
         

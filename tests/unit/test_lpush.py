@@ -1,6 +1,7 @@
 """Unit tests for LPUSH command (with mocked storage)."""
 
 import pytest
+import asyncio
 from unittest.mock import Mock, patch
 
 from app.commands.lpush import LpushCommand
@@ -27,7 +28,7 @@ class TestLpushCommand:
         mock_get_storage.return_value = mock_storage
         mock_storage.lpush.return_value = 3
         
-        result = lpush_command.execute(['mylist', 'value'])
+        result = asyncio.run(lpush_command.execute(['mylist', 'value']))
         
         mock_storage.lpush.assert_called_once_with('mylist', 'value')
         assert result == 3
@@ -38,7 +39,7 @@ class TestLpushCommand:
         mock_get_storage.return_value = mock_storage
         mock_storage.lpush.return_value = 1
         
-        result = lpush_command.execute(['list', 'foo'])
+        result = asyncio.run(lpush_command.execute(['list', 'foo']))
         
         mock_storage.lpush.assert_called_once_with('list', 'foo')
         assert result == 1
@@ -49,7 +50,7 @@ class TestLpushCommand:
         mock_get_storage.return_value = mock_storage
         mock_storage.lpush.return_value = 5
         
-        result = lpush_command.execute(['list', 'foo', 'bar', 'baz'])
+        result = asyncio.run(lpush_command.execute(['list', 'foo', 'bar', 'baz']))
         
         mock_storage.lpush.assert_called_once_with('list', 'foo', 'bar', 'baz')
         assert result == 5
@@ -60,20 +61,18 @@ class TestLpushCommand:
         mock_get_storage.return_value = mock_storage
         mock_storage.lpush.return_value = 1
         
-        result = lpush_command.execute(['list', ''])
+        result = asyncio.run(lpush_command.execute(['list', '']))
         
         mock_storage.lpush.assert_called_once_with('list', '')
     
     def test_lpush_no_args(self, lpush_command):
         """LPUSH without arguments raises error."""
         with pytest.raises(ValueError, match="wrong number of arguments"):
-            lpush_command.execute([])
-    
+            asyncio.run(lpush_command.execute([]))
     def test_lpush_one_arg(self, lpush_command):
         """LPUSH with only key raises error."""
         with pytest.raises(ValueError, match="wrong number of arguments"):
-            lpush_command.execute(['key'])
-    
+            asyncio.run(lpush_command.execute(['key']))
     def test_command_name(self, lpush_command):
         """Command has correct name."""
         assert lpush_command.name == 'LPUSH'
@@ -84,6 +83,5 @@ class TestLpushCommand:
         mock_get_storage.return_value = mock_storage
         mock_storage.lpush.return_value = 1
         
-        lpush_command.execute(['key', 'value'])
-        
+        asyncio.run(lpush_command.execute(['key', 'value']))
         mock_get_storage.assert_called_once()

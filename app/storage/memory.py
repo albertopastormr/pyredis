@@ -148,12 +148,16 @@ class InMemoryStorage(BaseStorage):
             Length of list after push
         """
         if key in self._data:
-            return self._data[key].rpush(*values)
+            length = self._data[key].rpush(*values)
         else:
             new_list = RedisList()
             length = new_list.rpush(*values)
             self._data[key] = new_list
-            return length
+        
+        from app.blocking import notify_key
+        notify_key(key=key, available_count=length)
+        
+        return length
 
     @require_type(RedisType.LIST)
     def lpush(self, key: str, *values: str) -> int:
@@ -171,12 +175,16 @@ class InMemoryStorage(BaseStorage):
             Length of list after push
         """
         if key in self._data:
-            return self._data[key].lpush(*values)
+            length = self._data[key].lpush(*values)
         else:
             new_list = RedisList()
             length = new_list.lpush(*values)
             self._data[key] = new_list
-            return length
+        
+        from app.blocking import notify_key
+        notify_key(key=key, available_count=length)
+        
+        return length
     
     @require_type(RedisType.LIST)
     def lrange(self, key: str, start: int, stop: int) -> List[str]:

@@ -3,7 +3,7 @@
 import pytest
 
 from app.resp import RESPParser, RESPEncoder
-from app.handler import execute_command
+from tests.helpers import execute_command
 
 
 class TestPingIntegration:

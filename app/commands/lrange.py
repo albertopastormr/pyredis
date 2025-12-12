@@ -22,7 +22,7 @@ class LrangeCommand(BaseCommand):
     def name(self) -> str:
         return "LRANGE"
     
-    def execute(self, args: List[str]) -> Any:
+    async def execute(self, args: List[str]) -> Any:
         """
         Execute LRANGE command.
         

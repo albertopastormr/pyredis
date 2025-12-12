@@ -15,7 +15,7 @@ class EchoCommand(BaseCommand):
     def name(self) -> str:
         return "ECHO"
     
-    def execute(self, args: List[str]) -> Any:
+    async def execute(self, args: List[str]) -> Any:
         """
         Execute ECHO command.
         

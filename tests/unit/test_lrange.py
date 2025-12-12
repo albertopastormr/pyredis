@@ -1,6 +1,7 @@
 """Unit tests for LRANGE command (with mocked storage)."""
 
 import pytest
+import asyncio
 from unittest.mock import Mock, patch
 
 from app.commands.lrange import LrangeCommand
@@ -27,7 +28,7 @@ class TestLrangeCommand:
         mock_get_storage.return_value = mock_storage
         mock_storage.lrange.return_value = ['a', 'b', 'c']
         
-        result = lrange_command.execute(['mylist', '0', '2'])
+        result = asyncio.run(lrange_command.execute(['mylist', '0', '2']))
         
         mock_storage.lrange.assert_called_once_with('mylist', 0, 2)
         assert result == ['a', 'b', 'c']
@@ -38,7 +39,7 @@ class TestLrangeCommand:
         mock_get_storage.return_value = mock_storage
         mock_storage.lrange.return_value = []
         
-        result = lrange_command.execute(['nonexistent', '0', '5'])
+        result = asyncio.run(lrange_command.execute(['nonexistent', '0', '5']))
         
         mock_storage.lrange.assert_called_once_with('nonexistent', 0, 5)
         assert result == []
@@ -49,41 +50,34 @@ class TestLrangeCommand:
         mock_get_storage.return_value = mock_storage
         mock_storage.lrange.return_value = ['x', 'y']
         
-        lrange_command.execute(['list', '10', '20'])
-        
+        asyncio.run(lrange_command.execute(['list', '10', '20']))
         # Verify integers were passed to storage
         mock_storage.lrange.assert_called_once_with('list', 10, 20)
     
     def test_lrange_no_args(self, lrange_command):
         """LRANGE without arguments raises error."""
         with pytest.raises(ValueError, match="wrong number of arguments"):
-            lrange_command.execute([])
-    
+            asyncio.run(lrange_command.execute([]))
     def test_lrange_one_arg(self, lrange_command):
         """LRANGE with only key raises error."""
         with pytest.raises(ValueError, match="wrong number of arguments"):
-            lrange_command.execute(['key'])
-    
+            asyncio.run(lrange_command.execute(['key']))
     def test_lrange_two_args(self, lrange_command):
         """LRANGE with only key and start raises error."""
         with pytest.raises(ValueError, match="wrong number of arguments"):
-            lrange_command.execute(['key', '0'])
-    
+            asyncio.run(lrange_command.execute(['key', '0']))
     def test_lrange_too_many_args(self, lrange_command):
         """LRANGE with too many arguments raises error."""
         with pytest.raises(ValueError, match="wrong number of arguments"):
-            lrange_command.execute(['key', '0', '5', 'extra'])
-    
+            asyncio.run(lrange_command.execute(['key', '0', '5', 'extra']))
     def test_lrange_invalid_start(self, lrange_command):
         """LRANGE with non-integer start raises error."""
         with pytest.raises(ValueError, match="not an integer"):
-            lrange_command.execute(['key', 'abc', '5'])
-    
+            asyncio.run(lrange_command.execute(['key', 'abc', '5']))
     def test_lrange_invalid_stop(self, lrange_command):
         """LRANGE with non-integer stop raises error."""
         with pytest.raises(ValueError, match="not an integer"):
-            lrange_command.execute(['key', '0', 'xyz'])
-    
+            asyncio.run(lrange_command.execute(['key', '0', 'xyz']))
     def test_command_name(self, lrange_command):
         """Command has correct name."""
         assert lrange_command.name == 'LRANGE'
@@ -94,6 +88,5 @@ class TestLrangeCommand:
         mock_get_storage.return_value = mock_storage
         mock_storage.lrange.return_value = []
         
-        lrange_command.execute(['key', '0', '5'])
-        
+        asyncio.run(lrange_command.execute(['key', '0', '5']))
         mock_get_storage.assert_called_once()

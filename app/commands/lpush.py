@@ -19,7 +19,7 @@ class LpushCommand(BaseCommand):
     def name(self) -> str:
         return "LPUSH"
     
-    def execute(self, args: List[str]) -> Any:
+    async def execute(self, args: List[str]) -> Any:
         """
         Execute LPUSH command.
         

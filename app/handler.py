@@ -1,11 +1,10 @@
 """Client connection handler - RESP protocol layer."""
 
 import asyncio
-from typing import Tuple, List, Any
+from typing import List, Any
 
 from .resp import RESPParser, RESPEncoder
 from .commands import CommandRegistry
-from .exceptions import WrongTypeError
 
 
 async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
@@ -29,13 +28,12 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 break
             
             print(f"[{addr}] Received {len(data)} bytes")
-            print(f"[{addr}] Raw bytes: {data!r}")
             
             try:
                 command = RESPParser.parse(data)
                 print(f"[{addr}] Parsed command: {command}")
                 
-                response = execute_command(command)
+                response = await execute_command(command)
                 
                 response_bytes = RESPEncoder.encode(response)
                 writer.write(response_bytes)
@@ -57,22 +55,31 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
         await writer.wait_closed()
 
 
-def execute_command(args) -> Any:
+async def execute_command(args: List[str]) -> Any:
     """
-    Execute a command from parsed RESP array.
+    Execute a command asynchronously.
+    
+    Single unified interface for command execution.
     
     Args:
-        args: Command and arguments as list of strings
+        args: Command and arguments as list of strings (command name included)
     
     Returns:
         Result from command execution
     
     Raises:
-        ValueError: For command errors (including WrongTypeError)
+        ValueError: For command errors
     """
     if not isinstance(args, list) or len(args) == 0:
         raise ValueError("Invalid command format")
     
     command_name = args[0]
     command_args = args[1:]
-    return CommandRegistry.execute(command_name, command_args)
+    
+    command_class = CommandRegistry._commands.get(command_name.upper())
+    
+    if not command_class:
+        raise ValueError(f"ERR unknown command '{command_name}'")
+    
+    command_obj = command_class()
+    return await command_obj.execute(command_args)

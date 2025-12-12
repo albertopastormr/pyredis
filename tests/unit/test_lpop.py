@@ -1,6 +1,7 @@
 """Unit tests for LPOP command (with mocked storage)."""
 
 import pytest
+import asyncio
 from unittest.mock import Mock, patch
 
 from app.commands.lpop import LpopCommand
@@ -27,7 +28,7 @@ class TestLpopCommand:
         mock_get_storage.return_value = mock_storage
         mock_storage.lpop.return_value = ['a']
         
-        result = lpop_command.execute(['mylist'])
+        result = asyncio.run(lpop_command.execute(['mylist']))
         
         mock_storage.lpop.assert_called_once_with('mylist', 1)
         assert result == 'a'
@@ -38,7 +39,7 @@ class TestLpopCommand:
         mock_get_storage.return_value = mock_storage
         mock_storage.lpop.return_value = ['a', 'b', 'c']
         
-        result = lpop_command.execute(['mylist', '3'])
+        result = asyncio.run(lpop_command.execute(['mylist', '3']))
         
         mock_storage.lpop.assert_called_once_with('mylist', 3)
         assert result == ['a', 'b', 'c']
@@ -49,7 +50,7 @@ class TestLpopCommand:
         mock_get_storage.return_value = mock_storage
         mock_storage.lpop.return_value = None
         
-        result = lpop_command.execute(['nonexistent'])
+        result = asyncio.run(lpop_command.execute(['nonexistent']))
         
         assert result is None
     
@@ -59,30 +60,26 @@ class TestLpopCommand:
         mock_get_storage.return_value = mock_storage
         mock_storage.lpop.return_value = []
         
-        result = lpop_command.execute(['mylist', '5'])
+        result = asyncio.run(lpop_command.execute(['mylist', '5']))
         
         assert result == []
     
     def test_lpop_no_args(self, lpop_command):
         """LPOP without arguments raises error."""
         with pytest.raises(ValueError, match="wrong number of arguments"):
-            lpop_command.execute([])
-    
+            asyncio.run(lpop_command.execute([]))
     def test_lpop_too_many_args(self, lpop_command):
         """LPOP with too many arguments raises error."""
         with pytest.raises(ValueError, match="wrong number of arguments"):
-            lpop_command.execute(['key', '1', 'extra'])
-    
+            asyncio.run(lpop_command.execute(['key', '1', 'extra']))
     def test_lpop_invalid_count(self, lpop_command):
         """LPOP with non-integer count raises error."""
         with pytest.raises(ValueError, match="not an integer"):
-            lpop_command.execute(['key', 'abc'])
-    
+            asyncio.run(lpop_command.execute(['key', 'abc']))
     def test_lpop_negative_count(self, lpop_command):
         """LPOP with negative count raises error."""
         with pytest.raises(ValueError, match="out of range"):
-            lpop_command.execute(['key', '-1'])
-    
+            asyncio.run(lpop_command.execute(['key', '-1']))
     def test_command_name(self, lpop_command):
         """Command has correct name."""
         assert lpop_command.name == 'LPOP'
@@ -93,6 +90,5 @@ class TestLpopCommand:
         mock_get_storage.return_value = mock_storage
         mock_storage.lpop.return_value = ['a']
         
-        lpop_command.execute(['key'])
-        
+        asyncio.run(lpop_command.execute(['key']))
         mock_get_storage.assert_called_once()

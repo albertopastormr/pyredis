@@ -3,8 +3,8 @@
 import pytest
 
 from app.resp import RESPParser, RESPEncoder
-from app.handler import execute_command
 from app.storage import get_storage
+from tests.helpers import execute_command
 
 
 class TestSetGetIntegration:

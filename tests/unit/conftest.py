@@ -1,4 +1,4 @@
-"""Shared fixtures for integration tests."""
+"""Unit test configuration - doesn't monkey-patch handler."""
 
 import pytest
 from app.storage import get_storage

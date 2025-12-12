@@ -77,13 +77,11 @@ class RedisList(RedisValue):
         if count <= 0:
             return []
         
-        # If count >= length, pop all elements
         if count >= len(self.values):
             result = self.values[:]
             self.values = []
             return result
         
-        # Pop 'count' elements from the left
         result = self.values[:count]
         self.values = self.values[count:]
         return result

@@ -1,6 +1,7 @@
 """Unit tests for SET command (with mocked storage)."""
 
 import pytest
+import asyncio
 from unittest.mock import Mock, patch
 
 from app.commands.set import SetCommand
@@ -26,7 +27,7 @@ class TestSetCommand:
         """SET command calls storage.set() with correct args."""
         mock_get_storage.return_value = mock_storage
         
-        result = set_command.execute(['mykey', 'myvalue'])
+        result = asyncio.run(set_command.execute(['mykey', 'myvalue']))
         
         mock_storage.set.assert_called_once_with('mykey', 'myvalue')
         assert result == {'ok': 'OK'}
@@ -36,7 +37,7 @@ class TestSetCommand:
         """SET command returns OK response."""
         mock_get_storage.return_value = mock_storage
         
-        result = set_command.execute(['key', 'value'])
+        result = asyncio.run(set_command.execute(['key', 'value']))
         
         assert result == {'ok': 'OK'}
     
@@ -45,7 +46,7 @@ class TestSetCommand:
         """SET command handles empty value."""
         mock_get_storage.return_value = mock_storage
         
-        result = set_command.execute(['key', ''])
+        result = asyncio.run(set_command.execute(['key', '']))
         
         mock_storage.set.assert_called_once_with('key', '')
         assert result == {'ok': 'OK'}
@@ -56,26 +57,23 @@ class TestSetCommand:
         mock_get_storage.return_value = mock_storage
         special_value = 'hello\r\n\t世界'
         
-        result = set_command.execute(['key', special_value])
+        result = asyncio.run(set_command.execute(['key', special_value]))
         
         mock_storage.set.assert_called_once_with('key', special_value)
     
     def test_set_no_args(self, set_command):
         """SET without arguments raises error."""
         with pytest.raises(ValueError, match="wrong number of arguments"):
-            set_command.execute([])
-    
+            asyncio.run(set_command.execute([]))
     def test_set_one_arg(self, set_command):
         """SET with only key raises error."""
         with pytest.raises(ValueError, match="wrong number of arguments"):
-            set_command.execute(['key'])
-    
+            asyncio.run(set_command.execute(['key']))
     def test_set_too_many_args(self, set_command):
         """SET with too many arguments raises error."""
         # 5 args is too many (valid is 2 or 4 with PX)
         with pytest.raises(ValueError, match="wrong number of arguments|syntax error"):
-            set_command.execute(['key', 'value', 'extra', 'arg4', 'arg5'])
-    
+            asyncio.run(set_command.execute(['key', 'value', 'extra', 'arg4', 'arg5']))
     def test_command_name(self, set_command):
         """Command has correct name."""
         assert set_command.name == 'SET'
@@ -85,6 +83,5 @@ class TestSetCommand:
         """Verify get_storage() is called once per execute."""
         mock_get_storage.return_value = mock_storage
         
-        set_command.execute(['key', 'value'])
-        
+        asyncio.run(set_command.execute(['key', 'value']))
         mock_get_storage.assert_called_once()

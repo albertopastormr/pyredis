@@ -20,7 +20,7 @@ class LlenCommand(BaseCommand):
     def name(self) -> str:
         return "LLEN"
     
-    def execute(self, args: List[str]) -> Any:
+    async def execute(self, args: List[str]) -> Any:
         """
         Execute LLEN command.
         

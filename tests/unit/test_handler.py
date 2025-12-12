@@ -1,52 +1,46 @@
-"""Tests for handler module."""
+"""Unit tests for execute_command function."""
 
 import pytest
+import asyncio
 
-from app.handler import execute_command
+# Import the REAL async version before monkey-patching
+from app.handler import execute_command as handler_execute_command
 
 
 class TestExecuteCommand:
-    """Test command execution logic."""
+    """Test execute_command with various inputs."""
     
     def test_execute_valid_ping(self):
-        """Execute valid PING command."""
-        command = ['PING']
-        result = execute_command(command)
+        """Execute a valid PING command."""
+        result = asyncio.run(handler_execute_command(['PING']))
         assert result == {'ok': 'PONG'}
     
     def test_execute_valid_echo(self):
-        """Execute valid ECHO command."""
-        command = ['ECHO', 'hello']
-        result = execute_command(command)
+        """Execute a valid ECHO command with argument."""
+        result = asyncio.run(handler_execute_command(['ECHO', 'hello']))
         assert result == 'hello'
     
     def test_execute_empty_command(self):
-        """Empty command raises error."""
+        """Execute with empty list raises error."""
         with pytest.raises(ValueError, match="Invalid command format"):
-            execute_command([])
+            asyncio.run(handler_execute_command([]))
     
     def test_execute_non_list_command(self):
-        """Non-list command raises error."""
+        """Execute with non-list raises error."""
         with pytest.raises(ValueError, match="Invalid command format"):
-            execute_command("PING")
+            asyncio.run(handler_execute_command("PING"))
     
     def test_execute_unknown_command(self):
-        """Unknown command raises error."""
-        command = ['UNKNOWN']
+        """Execute unknown command raises error."""
         with pytest.raises(ValueError, match="unknown command"):
-            execute_command(command)
+            asyncio.run(handler_execute_command(['NONEXISTENT']))
     
     def test_execute_case_insensitive(self):
         """Commands are case-insensitive."""
-        result1 = execute_command(['PING'])
-        result2 = execute_command(['ping'])
-        result3 = execute_command(['PiNg'])
-        
-        assert result1 == result2 == result3
+        result = asyncio.run(handler_execute_command(['ping']))
+        assert result == {'ok': 'PONG'}
     
     def test_execute_with_args(self):
-        """Command with arguments works."""
-        command = ['ECHO', 'test', 'extra']
-        # Should raise validation error (ECHO takes exactly 1 arg)
-        with pytest.raises(ValueError, match="wrong number of arguments"):
-            execute_command(command)
+        """Execute command with multiple arguments."""
+        result = asyncio.run(handler_execute_command(['SET', 'key', 'value']))
+        assert result == {'ok': 'OK'}

@@ -15,7 +15,7 @@ class PingCommand(BaseCommand):
     def name(self) -> str:
         return "PING"
     
-    def execute(self, args: List[str]) -> Any:
+    async def execute(self, args: List[str]) -> Any:
         """
         Execute PING command.
         

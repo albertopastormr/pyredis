@@ -3,8 +3,8 @@
 import pytest
 import time
 
-from app.handler import execute_command
 from app.resp import RESPEncoder
+from tests.helpers import execute_command
 
 
 class TestTTLIntegration:
