@@ -1,17 +1,24 @@
-"""Redis value type system."""
+"""Redis value types and type checking."""
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
 from enum import Enum
+from typing import List, Optional, Callable
 from functools import wraps
+
+from app.exceptions import WrongTypeError
 
 
 class RedisType(Enum):
-    """Redis data types."""
+    """Enum for Redis data types."""
     STRING = "string"
     LIST = "list"
     SET = "set"
     HASH = "hash"
+
+
+def raise_wrong_type() -> None:
+    """Raise a consistent WRONGTYPE error."""
+    raise WrongTypeError()
 
 
 class RedisValue(ABC):
@@ -128,11 +135,6 @@ class RedisList(RedisValue):
     
     def __repr__(self) -> str:
         return f"RedisList({self.values!r})"
-
-
-def raise_wrong_type():
-    """Centralized WRONGTYPE error"""
-    raise ValueError("WRONGTYPE Operation against a key holding the wrong kind of value")
 
 
 def require_type(expected_type: RedisType):

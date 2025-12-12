@@ -1,10 +1,11 @@
 """Client connection handler - RESP protocol layer."""
 
 import asyncio
-from typing import Tuple
+from typing import Tuple, List, Any
 
 from .resp import RESPParser, RESPEncoder
 from .commands import CommandRegistry
+from .exceptions import WrongTypeError
 
 
 async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
@@ -56,20 +57,22 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
         await writer.wait_closed()
 
 
-def execute_command(command) -> any:
+def execute_command(args) -> Any:
     """
-    Execute a parsed command.
+    Execute a command from parsed RESP array.
     
     Args:
-        command: Parsed RESP command (typically a list)
+        args: Command and arguments as list of strings
     
     Returns:
-        Response value to be encoded
+        Result from command execution
+    
+    Raises:
+        ValueError: For command errors (including WrongTypeError)
     """
-    if not isinstance(command, list) or len(command) == 0:
+    if not isinstance(args, list) or len(args) == 0:
         raise ValueError("Invalid command format")
     
-    command_name = command[0]
-    args = command[1:] if len(command) > 1 else []
-    
-    return CommandRegistry.execute(command_name, args)
+    command_name = args[0]
+    command_args = args[1:]
+    return CommandRegistry.execute(command_name, command_args)

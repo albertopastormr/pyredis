@@ -15,6 +15,7 @@ from .lpush import LpushCommand
 from .lrange import LrangeCommand
 from .llen import LlenCommand
 from .lpop import LpopCommand
+from .blpop import BlpopCommand
 
 
 class CommandRegistry:
@@ -74,6 +75,7 @@ CommandRegistry.register(LrangeCommand)
 CommandRegistry.register(LpushCommand)
 CommandRegistry.register(LlenCommand)
 CommandRegistry.register(LpopCommand)
+CommandRegistry.register(BlpopCommand)
 
 
-__all__ = ['CommandRegistry', 'BaseCommand', 'PingCommand', 'EchoCommand', 'SetCommand', 'GetCommand', 'RpushCommand', 'LrangeCommand', 'LpushCommand', 'LlenCommand', 'LpopCommand']
+__all__ = ['CommandRegistry', 'BaseCommand', 'PingCommand', 'EchoCommand', 'SetCommand', 'GetCommand', 'RpushCommand', 'LrangeCommand', 'LpushCommand', 'LlenCommand', 'LpopCommand', 'BlpopCommand']

@@ -561,3 +561,103 @@ class TestLpopIntegration:
         
         assert result1 == 'a'
         assert result2 == 'b'
+
+
+class TestBlpopIntegration:
+    """Test BLPOP integration with storage."""
+    
+    def test_blpop_immediate_return_with_element(self):
+        """BLPOP returns immediately if element available."""
+        execute_command(['RPUSH', 'mylist', 'a', 'b'])
+        result = execute_command(['BLPOP', 'mylist', '5'])
+        
+        assert result == ['mylist', 'a']
+        # Verify element was removed
+        remaining = execute_command(['LRANGE', 'mylist', '0', '-1'])
+        assert remaining == ['b']
+    
+    def test_blpop_timeout_on_empty_list(self):
+        """BLPOP returns None after timeout on empty list."""
+        import time
+        start = time.monotonic()
+        result = execute_command(['BLPOP', 'empty', '0.5'])
+        elapsed = time.monotonic() - start
+        
+        assert result is None
+        assert 0.4 < elapsed < 1.0  # Should timeout around 0.5s
+    
+    def test_blpop_timeout_on_nonexistent_key(self):
+        """BLPOP returns None after timeout on non-existent key."""
+        import time
+        start = time.monotonic()
+        result = execute_command(['BLPOP', 'nonexistent', '0.5'])
+        elapsed = time.monotonic() - start
+        
+        assert result is None
+        assert 0.4 < elapsed < 1.0
+    
+    def test_blpop_returns_array_in_resp(self):
+        """BLPOP returns array [key, value] in RESP format."""
+        execute_command(['RPUSH', 'list', 'foo'])
+        result = execute_command(['BLPOP', 'list', '1'])
+        response = RESPEncoder.encode(result)
+        
+        # Array with 2 bulk strings
+        assert response == b"*2\r\n$4\r\nlist\r\n$3\r\nfoo\r\n"
+    
+    def test_blpop_returns_null_in_resp(self):
+        """BLPOP returns null array in RESP format on timeout."""
+        result = execute_command(['BLPOP', 'nonexistent', '0.2'])
+        response = RESPEncoder.encode(result)
+        
+        # Null bulk string
+        assert response == b"$-1\r\n"
+    
+    def test_blpop_zero_timeout_mechanism(self):
+        """BLPOP with timeout=0 waits but has safety limit."""
+        # Note: We can't truly test indefinite blocking without async operations
+        # This test just verifies that timeout=0 is accepted
+        execute_command(['RPUSH', 'list', 'item'])
+        result = execute_command(['BLPOP', 'list', '0'])
+        
+        # Should return immediately since list has an element
+        assert result == ['list', 'item']
+    
+    def test_blpop_on_string_key_immediate_return(self):
+        """BLPOP on string key returns immediately (finds no list)."""
+        execute_command(['SET', 'mykey', 'string value'])
+        import time
+        start = time.monotonic()
+        result = execute_command(['BLPOP', 'mykey', '0.5'])
+        elapsed = time.monotonic() - start
+        
+        # Should timeout since it's not a list
+        assert result is None
+        assert 0.4 < elapsed < 1.0
+    
+    def test_blpop_no_args(self):
+        """BLPOP without arguments raises error."""
+        with pytest.raises(ValueError, match="wrong number of arguments"):
+            execute_command(['BLPOP'])
+    
+    def test_blpop_one_arg(self):
+        """BLPOP with only key raises error."""
+        with pytest.raises(ValueError, match="wrong number of arguments"):
+            execute_command(['BLPOP', 'key'])
+    
+    def test_blpop_invalid_timeout(self):
+        """BLPOP with non-numeric timeout raises error."""
+        with pytest.raises(ValueError, match="not a float"):
+            execute_command(['BLPOP', 'key', 'abc'])
+    
+    def test_blpop_negative_timeout(self):
+        """BLPOP with negative timeout raises error."""
+        with pytest.raises(ValueError, match="negative"):
+            execute_command(['BLPOP', 'key', '-1'])
+    
+    def test_blpop_case_insensitive(self):
+        """BLPOP is case-insensitive."""
+        execute_command(['RPUSH', 'list', 'a'])
+        result = execute_command(['blpop', 'list', '1'])
+        
+        assert result == ['list', 'a']
