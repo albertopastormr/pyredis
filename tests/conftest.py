@@ -1,12 +1,13 @@
 """Pytest configuration and fixtures."""
 
-import pytest
 import asyncio
+import os
 import socket
 import sys
-import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+import pytest
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 @pytest.fixture
@@ -21,7 +22,7 @@ def event_loop():
 def unused_tcp_port():
     """Find an unused TCP port for testing."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('', 0))
+        s.bind(("", 0))
         s.listen(1)
         port = s.getsockname()[1]
     return port

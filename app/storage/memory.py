@@ -1,63 +1,64 @@
 """In-memory storage implementation using Python dict."""
 
 import time
-from typing import Optional, Dict, List
+from typing import Optional
+
 from .base import BaseStorage
-from .types import RedisValue, RedisString, RedisList, RedisType, require_type
+from .types import RedisList, RedisString, RedisType, RedisValue, require_type
 
 
 class InMemoryStorage(BaseStorage):
     """
     In-memory storage using Python dict.
-    
+
     This is the primary storage mechanism - same as real Redis.
     Thread-safe with asyncio (single-threaded event loop + GIL).
     Supports TTL (Time To Live) for key expiration.
     Supports multiple data types: strings, lists.
     """
-    
+
     def __init__(self):
         """Initialize empty storage."""
-        self._data: Dict[str, RedisValue] = {}
-        self._expiry: Dict[str, float] = {}  # key -> monotonic expiration time
-    
+        self._data: dict[str, RedisValue] = {}
+        self._expiry: dict[str, float] = {}  # key -> monotonic expiration time
+
     def _is_expired(self, key: str) -> bool:
         """Check if a key has expired."""
         if key not in self._expiry:
             return False
         return time.monotonic() > self._expiry[key]
-    
+
     @require_type(RedisType.STRING)
     def get(self, key: str) -> Optional[str]:
         """
         Get value by key.
-        
+
         Returns None if key doesn't exist or has expired.
         Time complexity: O(1) average case
-        
+
         Args:
             key: The key to look up
-        
+
         Returns:
             Value if key exists and not expired, None otherwise
         """
         if key not in self._data:
             return None
-        
+
         if self._is_expired(key):
             del self._data[key]
             del self._expiry[key]
             return None
-        
+
         return self._data[key].value
-    
+
     def set(self, key: str, value: str) -> None:
         """
         Set key to value.
-        
+
         Overwrites any existing type.
         Time complexity: O(1) average case
-        
+
         Args:
             key: The key to set
             value: The value to store
@@ -65,14 +66,14 @@ class InMemoryStorage(BaseStorage):
         self._data[key] = RedisString(value)
         if key in self._expiry:
             del self._expiry[key]
-    
+
     def set_with_ttl(self, key: str, value: str, ttl_ms: int) -> None:
         """
         Set key to value with TTL.
-        
+
         Uses monotonic time to avoid system clock issues.
         Time complexity: O(1) average case
-        
+
         Args:
             key: The key to set
             value: The value to store
@@ -81,16 +82,16 @@ class InMemoryStorage(BaseStorage):
         self._data[key] = RedisString(value)
         # Use monotonic time (never goes backwards)
         self._expiry[key] = time.monotonic() + (ttl_ms / 1000.0)
-    
+
     def delete(self, key: str) -> bool:
         """
         Delete a key.
-        
+
         Time complexity: O(1) average case
-        
+
         Args:
             key: The key to delete
-        
+
         Returns:
             True if key existed, False otherwise
         """
@@ -100,50 +101,50 @@ class InMemoryStorage(BaseStorage):
                 del self._expiry[key]
             return True
         return False
-    
+
     def exists(self, key: str) -> bool:
         """
         Check if key exists and is not expired.
-        
+
         Time complexity: O(1) average case
-        
+
         Args:
             key: The key to check
-        
+
         Returns:
             True if key exists and not expired, False otherwise
         """
         if key not in self._data:
             return False
-        
+
         if self._is_expired(key):
             del self._data[key]
             del self._expiry[key]
             return False
-        
+
         return True
-    
+
     def clear(self) -> None:
         """
         Clear all data.
-        
+
         Time complexity: O(1)
         """
         self._data.clear()
         self._expiry.clear()
-    
+
     @require_type(RedisType.LIST)
     def rpush(self, key: str, *values: str) -> int:
         """
         Append values to list.
-        
+
         Creates list if it doesn't exist.
         Time complexity: O(N) where N is number of values
-        
+
         Args:
             key: The list key
             values: Values to append
-        
+
         Returns:
             Length of list after push
         """
@@ -153,24 +154,25 @@ class InMemoryStorage(BaseStorage):
             new_list = RedisList()
             length = new_list.rpush(*values)
             self._data[key] = new_list
-        
+
         from app.blocking import notify_key
+
         notify_key(key=key, available_count=length)
-        
+
         return length
 
     @require_type(RedisType.LIST)
     def lpush(self, key: str, *values: str) -> int:
         """
         Prepend values to list.
-        
+
         Creates list if it doesn't exist.
         Time complexity: O(N) where N is number of values
-        
+
         Args:
             key: The list key
             values: Values to prepend
-        
+
         Returns:
             Length of list after push
         """
@@ -180,87 +182,110 @@ class InMemoryStorage(BaseStorage):
             new_list = RedisList()
             length = new_list.lpush(*values)
             self._data[key] = new_list
-        
+
         from app.blocking import notify_key
+
         notify_key(key=key, available_count=length)
-        
+
         return length
-    
+
     @require_type(RedisType.LIST)
-    def lrange(self, key: str, start: int, stop: int) -> List[str]:
+    def lrange(self, key: str, start: int, stop: int) -> list[str]:
         """
         Get list elements in range.
-        
+
         Time complexity: O(S+N) where S is start offset and N is range size
-        
+
         Rules:
         - Returns empty list if key doesn't exist
         - If stop > length, treats as length (returns till end)
         - If start > stop or start > length, returns empty list
-        
+
         Args:
             key: The list key
             start: Start index (inclusive)
             stop: Stop index (inclusive)
-        
+
         Returns:
             List of elements in range, empty if key doesn't exist
         """
         if key not in self._data:
             return []
-        
+
         return self._data[key].lrange(start, stop)
-    
+
+    def type(self, key: str) -> str:
+        """
+        Get the type of a key.
+
+        Args:
+            key: Key to check
+
+        Returns:
+            "string", "list", or "none"
+        """
+        if key not in self._data:
+            return "none"
+
+        value = self._data[key]
+
+        if isinstance(value, RedisString):
+            return "string"
+        elif isinstance(value, RedisList):
+            return "list"
+        else:
+            return "none"
+
     @require_type(RedisType.LIST)
     def llen(self, key: str) -> int:
         """
         Get list length.
-        
+
         Time complexity: O(1)
-        
+
         Rules:
         - Returns 0 if key doesn't exist
-        
+
         Args:
             key: The list key
-        
+
         Returns:
             Length of list, 0 if key doesn't exist
         """
         if key not in self._data:
             return 0
-        
+
         return self._data[key].length()
-    
+
     @require_type(RedisType.LIST)
-    def lpop(self, key: str, count: int = 1) -> Optional[List[str]]:
+    def lpop(self, key: str, count: int = 1) -> Optional[list[str]]:
         """
         Remove and return elements from the left of the list.
-        
+
         Decorator ensures type is LIST if key exists.
         Time complexity: O(N) where N is count
-        
+
         Args:
             key: The list key
             count: Number of elements to pop (default 1)
-        
+
         Returns:
             List of popped elements, or None if key doesn't exist
         """
         if key not in self._data:
             return None
-        
+
         result = self._data[key].lpop(count)
-        
+
         if len(self._data[key]) == 0:
             del self._data[key]
-        
+
         return result
-    
+
     def __len__(self) -> int:
         """Return number of keys."""
         return len(self._data)
-    
+
     def __contains__(self, key: str) -> bool:
         """Support 'in' operator."""
         return key in self._data

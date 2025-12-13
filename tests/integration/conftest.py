@@ -1,6 +1,7 @@
 """Shared fixtures for integration tests."""
 
 import pytest
+
 from app.storage import get_storage
 
 

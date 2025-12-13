@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "codecrafters-redis"
 version = "0.1.0"
-requires-python = ">=3.14"
+requires-python = ">=3.9"
 dependencies = []
 
 [tool.setuptools]
@@ -14,6 +14,7 @@ packages = ["app", "app.resp", "app.commands", "app.storage"]
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
+    "ruff>=0.1.0",
 ]
 
 [tool.pytest.ini_options]
@@ -22,3 +23,27 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --strict-markers"
+
+# Ruff Configuration
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",  # Assert OK in tests
+]

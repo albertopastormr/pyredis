@@ -20,10 +20,10 @@ _storage_instance: BaseStorage = None
 def get_storage() -> BaseStorage:
     """
     Get the global storage instance.
-    
+
     Uses singleton pattern to ensure single storage instance
     across the application.
-    
+
     Returns:
         The global storage instance
     """
@@ -36,11 +36,11 @@ def get_storage() -> BaseStorage:
 def set_storage(storage: BaseStorage) -> None:
     """
     Set a custom storage backend.
-    
+
     Useful for:
     - Testing (inject mock storage)
     - Different backends (persistent, distributed, etc.)
-    
+
     Args:
         storage: Storage instance to use
     """
@@ -51,7 +51,7 @@ def set_storage(storage: BaseStorage) -> None:
 def reset_storage() -> None:
     """
     Reset storage to new instance.
-    
+
     Useful for:
     - Testing (clean slate between tests)
     - FLUSHALL command implementation
@@ -61,9 +61,9 @@ def reset_storage() -> None:
 
 
 __all__ = [
-    'BaseStorage',
-    'InMemoryStorage',
-    'get_storage',
-    'set_storage',
-    'reset_storage',
+    "BaseStorage",
+    "InMemoryStorage",
+    "get_storage",
+    "set_storage",
+    "reset_storage",
 ]
