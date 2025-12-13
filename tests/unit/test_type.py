@@ -30,7 +30,7 @@ class TestTypeCommand:
 
         result = asyncio.run(type_command.execute(["mykey"]))
 
-        assert result == "string"
+        assert result == {"ok": "string"}
         assert mock_storage.type_called_with == "mykey"
 
     def test_type_returns_list_for_list_value(self, monkeypatch):
@@ -41,7 +41,7 @@ class TestTypeCommand:
 
         result = asyncio.run(type_command.execute(["mylist"]))
 
-        assert result == "list"
+        assert result == {"ok": "list"}
         assert mock_storage.type_called_with == "mylist"
 
     def test_type_returns_none_for_nonexistent_key(self, monkeypatch):
@@ -52,7 +52,7 @@ class TestTypeCommand:
 
         result = asyncio.run(type_command.execute(["nonexistent"]))
 
-        assert result == "none"
+        assert result == {"ok": "none"}
         assert mock_storage.type_called_with == "nonexistent"
 
     def test_type_no_args(self):

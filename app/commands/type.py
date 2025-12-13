@@ -33,7 +33,7 @@ class TypeCommand(BaseCommand):
             args: [key]
 
         Returns:
-            String representing the type: "string", "list", or "none"
+            Simple string representing the type: "string", "list", or "none"
         """
         self.validate_args(args, min_args=1, max_args=1)
 
@@ -43,4 +43,5 @@ class TypeCommand(BaseCommand):
         # Get the type from storage
         key_type = storage.type(key)
 
-        return key_type
+        # Return as simple string (RESP format: +string\r\n)
+        return {"ok": key_type}
