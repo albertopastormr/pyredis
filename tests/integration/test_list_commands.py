@@ -478,7 +478,7 @@ class TestLpopIntegration:
     
     def test_lpop_nonexistent_key(self):
         """LPOP on non-existent key returns None."""
-        result = execute_command(['LPOP', 'nonexistent'])
+        result = execute_command(['LPOP', 'doesnotexist', '1'])
         assert result is None
     
     def test_lpop_until_empty(self):
@@ -583,7 +583,7 @@ class TestBlpopIntegration:
         result = execute_command(['BLPOP', 'empty', '0.5'])
         elapsed = time.monotonic() - start
         
-        assert result is None
+        assert result == {'null_array': True}
         assert 0.4 < elapsed < 1.0  # Should timeout around 0.5s
     
     def test_blpop_timeout_on_nonexistent_key(self):
@@ -593,7 +593,7 @@ class TestBlpopIntegration:
         result = execute_command(['BLPOP', 'nonexistent', '0.5'])
         elapsed = time.monotonic() - start
         
-        assert result is None
+        assert result == {'null_array': True}
         assert 0.4 < elapsed < 1.0
     
     def test_blpop_returns_array_in_resp(self):
@@ -606,12 +606,16 @@ class TestBlpopIntegration:
         assert response == b"*2\r\n$4\r\nlist\r\n$3\r\nfoo\r\n"
     
     def test_blpop_returns_null_in_resp(self):
-        """BLPOP returns null array in RESP format on timeout."""
-        result = execute_command(['BLPOP', 'nonexistent', '0.2'])
-        response = RESPEncoder.encode(result)
+        """BLPOP timeout returns RESP null array (*-1\r\n)."""
+        result = execute_command(['BLPOP', 'nonexistent', '0.1'])
         
-        # Null bulk string
-        assert response == b"$-1\r\n"
+        # Should return null array marker
+        assert result == {'null_array': True}
+        
+        # Verify RESP encoding
+        from app.resp import RESPEncoder
+        response = RESPEncoder.encode(result)
+        assert response == b"*-1\r\n"  # Null array for BLPOP timeout
     
     def test_blpop_zero_timeout_mechanism(self):
         """BLPOP with timeout=0 waits but has safety limit."""
@@ -632,7 +636,7 @@ class TestBlpopIntegration:
         elapsed = time.monotonic() - start
         
         # Should timeout since it's not a list
-        assert result is None
+        assert result == {'null_array': True}
         assert 0.4 < elapsed < 1.0
     
     def test_blpop_no_args(self):

@@ -42,7 +42,7 @@ class TestBlpopCommand:
         # Run async in event loop with short timeout
         result = asyncio.run(blpop_command.execute(['mylist', '0.1']))
         
-        assert result is None
+        assert result == {'null_array': True}
     
     def test_command_name(self, blpop_command):
         """Command has correct name."""

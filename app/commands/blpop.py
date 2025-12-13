@@ -82,11 +82,11 @@ class BlpopCommand(BaseCommand):
             
             # We were notified - try to pop
             result = self._try_pop(storage, key)
-            return result or None
+            return result or {'null_array': True}
             
         except asyncio.TimeoutError:
-            # Timeout expired
-            return None
+            # Timeout expired - return null array
+            return {'null_array': True}
         finally:
             # Always unregister
             unregister_waiter(key, event)

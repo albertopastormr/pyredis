@@ -78,7 +78,7 @@ class TestRESPEncoder:
         assert result == b"$0\r\n\r\n"
     
     def test_encode_null(self):
-        """Test encoding None."""
+        """Test encoding None as null bulk string (for GET, etc)."""
         result = RESPEncoder.encode(None)
         assert result == b"$-1\r\n"
     

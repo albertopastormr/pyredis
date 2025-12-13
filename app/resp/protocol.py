@@ -1,5 +1,7 @@
 """RESP (Redis Serialization Protocol) parser and encoder."""
 
+from typing import Any
+
 
 class RESPParser:
     """Parser for RESP protocol messages."""
@@ -43,6 +45,10 @@ class RESPParser:
         """Parse RESP array: *<count>\r\n<elements>"""
         count_str, pos = RESPParser._read_until_crlf(data, pos)
         count = int(count_str)
+        
+        # Null array
+        if count == -1:
+            return None, pos
         
         elements = []
         for _ in range(count):
@@ -123,48 +129,66 @@ class RESPEncoder:
     """Encoder for RESP protocol messages."""
     
     @staticmethod
-    def encode(value) -> bytes:
+    def encode(data: Any) -> bytes:
         """
-        Encode a Python value to RESP format.
-        Automatically determines the appropriate RESP type.
+        Encode Python data to RESP format.
         
-        Supported types:
-        - str → Bulk String ($3\\r\\nhey\\r\\n)
-        - int → Integer (:42\\r\\n)
-        - list → Array (*2\\r\\n...)
-        - None → Null Bulk String ($-1\\r\\n)
-        - dict with 'error' key → Error (-ERR message\\r\\n)
-        - dict with 'ok' key → Simple String (+OK\\r\\n)
+        Args:
+            data: Python object to encode
+        
+        Returns:
+            RESP-encoded bytes
         """
-        if value is None:
-            return RESPEncoder._encode_bulk_string(None)
+        if data is None:
+            # Null bulk string (for GET, etc.)
+            return b'$-1\r\n'
         
-        elif isinstance(value, str):
-            return RESPEncoder._encode_bulk_string(value)
+        if isinstance(data, bool):
+            # Boolean as simple string (true/false)
+            return f'${"true" if data else "false"}\r\n'.encode()
         
-        elif isinstance(value, int):
-            return RESPEncoder._encode_integer(value)
+        if isinstance(data, int):
+            # Integer
+            return f':{data}\r\n'.encode()
         
-        elif isinstance(value, list):
-            return RESPEncoder._encode_array(value)
+        if isinstance(data, str):
+            # Bulk string
+            return f'${len(data)}\r\n{data}\r\n'.encode()
         
-        elif isinstance(value, dict):
-            # Special dict formats for control
-            if 'error' in value:
-                return RESPEncoder._encode_error(value['error'])
-            elif 'ok' in value:
-                return RESPEncoder._encode_simple_string(value['ok'])
-            else:
-                raise ValueError(f"Unsupported dict format: {value}")
+        if isinstance(data, bytes):
+            # Bulk string (bytes)
+            return b'$%d\r\n%b\r\n' % (len(data), data)
         
-        else:
-            raise ValueError(f"Unsupported type for RESP encoding: {type(value)}")
+        if isinstance(data, list):
+            # Array
+            if len(data) == 0:
+                return b'*0\r\n'
+            
+            encoded = f'*{len(data)}\r\n'.encode()
+            for item in data:
+                encoded += RESPEncoder.encode(item)
+            return encoded
+        
+        if isinstance(data, dict):
+            # Special handling for responses
+            if 'ok' in data:
+                value = data['ok']
+                if isinstance(value, str):
+                    return f'+{value}\r\n'.encode()
+                return RESPEncoder.encode(value)
+            
+            if 'error' in data:
+                return f'-{data["error"]}\r\n'.encode()
+            
+            # Null array marker (for BLPOP timeout)
+            if 'null_array' in data:
+                return b'*-1\r\n'
+        
+        raise ValueError(f'Unsupported type for RESP encoding: {type(data)}')
     
     @staticmethod
     def _encode_simple_string(s: str) -> bytes:
         """Encode as RESP simple string: +<string>\r\n"""
-        return f"+{s}\r\n".encode('utf-8')
-    
     @staticmethod
     def _encode_bulk_string(s: str) -> bytes:
         """Encode as RESP bulk string: $<length>\r\n<data>\r\n"""
