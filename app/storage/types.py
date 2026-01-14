@@ -15,6 +15,7 @@ class RedisType(Enum):
     LIST = "list"
     SET = "set"
     HASH = "hash"
+    STREAM = "stream"
 
 
 def raise_wrong_type() -> None:
@@ -134,6 +135,49 @@ class RedisList(RedisValue):
 
     def __repr__(self) -> str:
         return f"RedisList({self.values!r})"
+
+
+class StreamEntry:
+    """Redis stream entry - ID with key-value pairs."""
+
+    def __init__(self, entry_id: str, fields: dict[str, str]):
+        self.id = entry_id
+        self.fields = fields
+
+    def __repr__(self) -> str:
+        return f"StreamEntry(id={self.id!r}, fields={self.fields!r})"
+
+
+class RedisStream(RedisValue):
+    """Redis stream type."""
+
+    def __init__(self):
+        self.entries: list[StreamEntry] = []
+
+    def get_type(self) -> RedisType:
+        return RedisType.STREAM
+
+    def xadd(self, entry_id: str, fields: dict[str, str]) -> str:
+        """
+        Add entry to stream.
+
+        Args:
+            entry_id: Entry ID (e.g., "1526985054069-0")
+            fields: Key-value pairs for the entry
+
+        Returns:
+            The entry ID that was added
+        """
+        entry = StreamEntry(entry_id, fields)
+        self.entries.append(entry)
+        return entry_id
+
+    def __len__(self) -> int:
+        """Support len() built-in."""
+        return len(self.entries)
+
+    def __repr__(self) -> str:
+        return f"RedisStream(entries={self.entries!r})"
 
 
 def require_type(expected_type: RedisType):

@@ -4,7 +4,7 @@ import time
 from typing import Optional
 
 from .base import BaseStorage
-from .types import RedisList, RedisString, RedisType, RedisValue, require_type
+from .types import RedisList, RedisStream, RedisString, RedisType, RedisValue, require_type
 
 
 class InMemoryStorage(BaseStorage):
@@ -222,7 +222,7 @@ class InMemoryStorage(BaseStorage):
             key: Key to check
 
         Returns:
-            "string", "list", or "none"
+            "string", "list", "stream", or "none"
         """
         if key not in self._data:
             return "none"
@@ -233,6 +233,8 @@ class InMemoryStorage(BaseStorage):
             return "string"
         elif isinstance(value, RedisList):
             return "list"
+        elif isinstance(value, RedisStream):
+            return "stream"
         else:
             return "none"
 
@@ -281,6 +283,30 @@ class InMemoryStorage(BaseStorage):
             del self._data[key]
 
         return result
+
+    @require_type(RedisType.STREAM)
+    def xadd(self, key: str, entry_id: str, fields: dict[str, str]) -> str:
+        """
+        Add entry to a stream.
+
+        Creates stream if it doesn't exist.
+        Time complexity: O(1)
+
+        Args:
+            key: The stream key
+            entry_id: Entry ID (e.g., "1526985054069-0")
+            fields: Key-value pairs for the entry
+
+        Returns:
+            The entry ID that was added
+        """
+        if key in self._data:
+            return self._data[key].xadd(entry_id, fields)
+        else:
+            new_stream = RedisStream()
+            entry_id_result = new_stream.xadd(entry_id, fields)
+            self._data[key] = new_stream
+            return entry_id_result
 
     def __len__(self) -> int:
         """Return number of keys."""

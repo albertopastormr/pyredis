@@ -18,6 +18,7 @@ from .ping import PingCommand
 from .rpush import RpushCommand
 from .set import SetCommand
 from .type import TypeCommand
+from .xadd import XaddCommand
 
 
 class CommandRegistry:
@@ -79,6 +80,7 @@ CommandRegistry.register(LlenCommand)
 CommandRegistry.register(LpopCommand)
 CommandRegistry.register(BlpopCommand)
 CommandRegistry.register(TypeCommand)
+CommandRegistry.register(XaddCommand)
 
 
 __all__ = [
@@ -94,4 +96,6 @@ __all__ = [
     "LlenCommand",
     "LpopCommand",
     "BlpopCommand",
+    "TypeCommand",
+    "XaddCommand",
 ]

@@ -31,7 +31,7 @@ test:
 
 install:
 	@echo "📦 Installing dependencies with uv..."
-	@uv pip install ruff pytest
+	@uv pip install -e ".[dev]"
 
 clean:
 	@echo "🧹 Cleaning cache..."

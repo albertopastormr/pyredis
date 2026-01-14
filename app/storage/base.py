@@ -151,6 +151,22 @@ class BaseStorage(ABC):
         Returns:
             "string" for string values
             "list" for list values
+            "stream" for stream values
             "none" if key doesn't exist
+        """
+        pass
+
+    @abstractmethod
+    def xadd(self, key: str, entry_id: str, fields: dict[str, str]) -> str:
+        """
+        Add entry to a stream.
+
+        Args:
+            key: The stream key
+            entry_id: Entry ID (e.g., "1526985054069-0")
+            fields: Key-value pairs for the entry
+
+        Returns:
+            The entry ID that was added
         """
         pass
