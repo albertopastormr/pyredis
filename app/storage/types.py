@@ -1,5 +1,6 @@
 """Redis value types and type checking."""
 
+import time
 from abc import ABC, abstractmethod
 from enum import Enum
 from functools import wraps
@@ -159,23 +160,91 @@ class RedisStream(RedisValue):
 
     def xadd(self, entry_id: str, fields: dict[str, str]) -> str:
         """
-        Add entry to stream with ID validation.
+        Add entry to stream with ID validation or auto-generation.
 
         Args:
-            entry_id: Entry ID (e.g., "1526985054069-0")
+            entry_id: Entry ID (e.g., "1526985054069-0", "1-*", or "*")
             fields: Key-value pairs for the entry
 
         Returns:
-            The entry ID that was added
+            The entry ID that was added (auto-generated if needed)
 
         Raises:
             ValueError: If entry ID is invalid or not greater than last entry
         """
-        self._validate_entry_id(entry_id)
+        generated_id = self._generate_entry_id(entry_id)
+        self._validate_entry_id(generated_id)
 
-        entry = StreamEntry(entry_id, fields)
+        entry = StreamEntry(generated_id, fields)
         self.entries.append(entry)
+        return generated_id
+
+    def _generate_entry_id(self, entry_id: str) -> str:
+        """
+        Generate entry ID if it contains wildcards (*).
+
+        Args:
+            entry_id: Entry ID pattern (e.g., "*", "1-*", or "123-456")
+
+        Returns:
+            Fully resolved entry ID
+
+        Raises:
+            ValueError: If ID format is invalid
+        """
+        if entry_id == "*":
+            # Auto-generate both timestamp and sequence
+            # Use time_ns() for precise millisecond timestamp (avoids float rounding)
+            ms_time = time.time_ns() // 1_000_000
+            seq_num = self._get_next_sequence_number(ms_time)
+            return f"{ms_time}-{seq_num}"
+        
+        if "-" in entry_id:
+            parts = entry_id.split("-", 1)
+            if len(parts) == 2:
+                ms_part, seq_part = parts
+                
+                if seq_part == "*":
+                    try:
+                        ms_time = int(ms_part)
+                        if ms_time < 0:
+                            raise ValueError("ERR Invalid stream ID specified as stream command argument")
+                        seq_num = self._get_next_sequence_number(ms_time)
+                        return f"{ms_time}-{seq_num}"
+                    except ValueError as e:
+                        if "Invalid stream ID" in str(e):
+                            raise
+                        raise ValueError("ERR Invalid stream ID specified as stream command argument")
+        
+        # Not a wildcard pattern, return as-is
         return entry_id
+
+    def _get_next_sequence_number(self, ms_time: int) -> int:
+        """
+        Get the next sequence number for a given timestamp.
+
+        Args:
+            ms_time: Milliseconds timestamp
+
+        Returns:
+            Next sequence number based on stream state
+        """
+        if not self.entries:
+            # Empty stream: use 0 for timestamp > 0, use 1 for timestamp = 0
+            return 1 if ms_time == 0 else 0
+        
+        # Get last entry's timestamp and sequence
+        last_entry_id = self.entries[-1].id
+        last_ms_time, last_seq_num = self._parse_entry_id(last_entry_id)
+        
+        if ms_time == last_ms_time:
+            # Same timestamp: increment sequence
+            return last_seq_num + 1
+        else:
+            # Different timestamp (new or older)
+            # For timestamp 0, always start at 1
+            # For other timestamps, start at 0
+            return 1 if ms_time == 0 else 0
 
     def _validate_entry_id(self, entry_id: str) -> None:
         """
