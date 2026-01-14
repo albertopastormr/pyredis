@@ -171,10 +171,8 @@ class RedisStream(RedisValue):
         Raises:
             ValueError: If entry ID is invalid or not greater than last entry
         """
-        # Validate the entry ID
         self._validate_entry_id(entry_id)
 
-        # Add entry to stream
         entry = StreamEntry(entry_id, fields)
         self.entries.append(entry)
         return entry_id
@@ -192,7 +190,13 @@ class RedisStream(RedisValue):
         # Parse and validate the entry ID format
         ms_time, seq_num = self._parse_entry_id(entry_id)
 
-        # Validate against last entry or minimum ID
+        # Check for minimum ID (0-0 is never valid)
+        if ms_time == 0 and seq_num == 0:
+            raise ValueError(
+                "ERR The ID specified in XADD must be greater than 0-0"
+            )
+
+        # Validate against last entry if stream has entries
         if self.entries:
             last_entry_id = self.entries[-1].id
             last_ms_time, last_seq_num = self._parse_entry_id(last_entry_id)
@@ -207,12 +211,6 @@ class RedisStream(RedisValue):
                 raise ValueError(
                     "ERR The ID specified in XADD is equal or smaller than the "
                     "target stream top item"
-                )
-        else:
-            # For empty streams, ID must be > "0-0"
-            if ms_time == 0 and seq_num == 0:
-                raise ValueError(
-                    "ERR The ID specified in XADD must be greater than 0-0"
                 )
 
     def _parse_entry_id(self, entry_id: str) -> tuple[int, int]:
