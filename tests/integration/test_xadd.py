@@ -117,3 +117,90 @@ class TestXaddErrors:
 
         with pytest.raises(WrongTypeError):
             execute_command(["XADD", "mylist", "0-1", "field", "value"])
+
+
+class TestXaddIdValidation:
+    """Test XADD entry ID validation."""
+
+    def test_xadd_first_entry_zero_zero_fails(self):
+        """First entry with ID 0-0 fails."""
+        with pytest.raises(ValueError, match="must be greater than 0-0"):
+            execute_command(["XADD", "stream", "0-0", "field", "value"])
+
+    def test_xadd_first_entry_zero_one_succeeds(self):
+        """First entry with ID 0-1 succeeds."""
+        result = execute_command(["XADD", "stream", "0-1", "field", "value"])
+        assert result == "0-1"
+
+    def test_xadd_duplicate_id_fails(self):
+        """Adding entry with same ID as last entry fails."""
+        execute_command(["XADD", "stream", "100-5", "field", "value1"])
+        
+        with pytest.raises(ValueError, match="equal or smaller"):
+            execute_command(["XADD", "stream", "100-5", "field", "value2"])
+
+    def test_xadd_smaller_timestamp_fails(self):
+        """Adding entry with smaller timestamp fails."""
+        execute_command(["XADD", "stream", "100-5", "field", "value1"])
+        
+        with pytest.raises(ValueError, match="equal or smaller"):
+            execute_command(["XADD", "stream", "99-10", "field", "value2"])
+
+    def test_xadd_same_timestamp_smaller_sequence_fails(self):
+        """Adding entry with same timestamp but smaller sequence fails."""
+        execute_command(["XADD", "stream", "100-5", "field", "value1"])
+        
+        with pytest.raises(ValueError, match="equal or smaller"):
+            execute_command(["XADD", "stream", "100-4", "field", "value2"])
+
+    def test_xadd_same_timestamp_greater_sequence_succeeds(self):
+        """Adding entry with same timestamp but greater sequence succeeds."""
+        execute_command(["XADD", "stream", "100-5", "field", "value1"])
+        result = execute_command(["XADD", "stream", "100-6", "field", "value2"])
+        
+        assert result == "100-6"
+
+    def test_xadd_greater_timestamp_succeeds(self):
+        """Adding entry with greater timestamp succeeds."""
+        execute_command(["XADD", "stream", "100-5", "field", "value1"])
+        result = execute_command(["XADD", "stream", "101-0", "field", "value2"])
+        
+        assert result == "101-0"
+
+    def test_xadd_incremental_ids(self):
+        """Adding multiple entries with incremental IDs."""
+        result1 = execute_command(["XADD", "stream", "0-1", "a", "1"])
+        result2 = execute_command(["XADD", "stream", "0-2", "a", "2"])
+        result3 = execute_command(["XADD", "stream", "1-0", "a", "3"])
+        result4 = execute_command(["XADD", "stream", "1-1", "a", "4"])
+        
+        assert result1 == "0-1"
+        assert result2 == "0-2"
+        assert result3 == "1-0"
+        assert result4 == "1-1"
+
+    def test_xadd_invalid_id_format_no_dash(self):
+        """Invalid ID format without dash fails."""
+        with pytest.raises(ValueError, match="Invalid stream ID"):
+            execute_command(["XADD", "stream", "12345", "field", "value"])
+
+    def test_xadd_invalid_id_format_too_many_parts(self):
+        """Invalid ID format with too many parts fails."""
+        with pytest.raises(ValueError, match="Invalid stream ID"):
+            execute_command(["XADD", "stream", "1-2-3", "field", "value"])
+
+    def test_xadd_invalid_id_non_numeric(self):
+        """Invalid ID with non-numeric parts fails."""
+        with pytest.raises(ValueError, match="Invalid stream ID"):
+            execute_command(["XADD", "stream", "abc-def", "field", "value"])
+
+    def test_xadd_invalid_id_negative_timestamp(self):
+        """Invalid ID with negative timestamp fails."""
+        with pytest.raises(ValueError, match="Invalid stream ID"):
+            execute_command(["XADD", "stream", "-1-0", "field", "value"])
+
+    def test_xadd_invalid_id_negative_sequence(self):
+        """Invalid ID with negative sequence fails."""
+        with pytest.raises(ValueError, match="Invalid stream ID"):
+            execute_command(["XADD", "stream", "0--1", "field", "value"])
+

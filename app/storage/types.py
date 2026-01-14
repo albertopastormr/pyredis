@@ -159,7 +159,7 @@ class RedisStream(RedisValue):
 
     def xadd(self, entry_id: str, fields: dict[str, str]) -> str:
         """
-        Add entry to stream.
+        Add entry to stream with ID validation.
 
         Args:
             entry_id: Entry ID (e.g., "1526985054069-0")
@@ -167,10 +167,83 @@ class RedisStream(RedisValue):
 
         Returns:
             The entry ID that was added
+
+        Raises:
+            ValueError: If entry ID is invalid or not greater than last entry
         """
+        # Validate the entry ID
+        self._validate_entry_id(entry_id)
+
+        # Add entry to stream
         entry = StreamEntry(entry_id, fields)
         self.entries.append(entry)
         return entry_id
+
+    def _validate_entry_id(self, entry_id: str) -> None:
+        """
+        Validate that entry ID is valid and greater than last entry.
+
+        Args:
+            entry_id: Entry ID to validate
+
+        Raises:
+            ValueError: If entry ID is invalid or not greater than last entry
+        """
+        # Parse and validate the entry ID format
+        ms_time, seq_num = self._parse_entry_id(entry_id)
+
+        # Validate against last entry or minimum ID
+        if self.entries:
+            last_entry_id = self.entries[-1].id
+            last_ms_time, last_seq_num = self._parse_entry_id(last_entry_id)
+
+            # ID must be strictly greater than last entry
+            if ms_time < last_ms_time:
+                raise ValueError(
+                    "ERR The ID specified in XADD is equal or smaller than the "
+                    "target stream top item"
+                )
+            elif ms_time == last_ms_time and seq_num <= last_seq_num:
+                raise ValueError(
+                    "ERR The ID specified in XADD is equal or smaller than the "
+                    "target stream top item"
+                )
+        else:
+            # For empty streams, ID must be > "0-0"
+            if ms_time == 0 and seq_num == 0:
+                raise ValueError(
+                    "ERR The ID specified in XADD must be greater than 0-0"
+                )
+
+    def _parse_entry_id(self, entry_id: str) -> tuple[int, int]:
+        """
+        Parse entry ID into milliseconds and sequence number.
+
+        Args:
+            entry_id: Entry ID string (e.g., "1526985054069-0")
+
+        Returns:
+            Tuple of (milliseconds_time, sequence_number)
+
+        Raises:
+            ValueError: If ID format is invalid
+        """
+        try:
+            parts = entry_id.split("-")
+            if len(parts) != 2:
+                raise ValueError("ERR Invalid stream ID specified as stream command argument")
+
+            ms_time = int(parts[0])
+            seq_num = int(parts[1])
+
+            if ms_time < 0 or seq_num < 0:
+                raise ValueError("ERR Invalid stream ID specified as stream command argument")
+
+            return ms_time, seq_num
+        except (ValueError, AttributeError) as e:
+            if "Invalid stream ID" in str(e):
+                raise
+            raise ValueError("ERR Invalid stream ID specified as stream command argument")
 
     def __len__(self) -> int:
         """Support len() built-in."""
