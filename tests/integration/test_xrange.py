@@ -120,6 +120,48 @@ class TestXrangeIntegration:
         result = execute_command(["XRANGE", "stream", "2-0", "1-0"])
         assert result == []
 
+    def test_xrange_minus_marker_start(self):
+        """XRANGE with - for start gets all entries from beginning."""
+        execute_command(["XADD", "stream", "100-0", "a", "1"])
+        execute_command(["XADD", "stream", "200-0", "b", "2"])
+        execute_command(["XADD", "stream", "300-0", "c", "3"])
+
+        result = execute_command(["XRANGE", "stream", "-", "200-0"])
+        
+        assert len(result) == 2
+        assert result[0][0] == "100-0"
+        assert result[1][0] == "200-0"
+
+    def test_xrange_plus_marker_end(self):
+        """XRANGE with + for end gets all entries to the end."""
+        execute_command(["XADD", "stream", "100-0", "a", "1"])
+        execute_command(["XADD", "stream", "200-0", "b", "2"])
+        execute_command(["XADD", "stream", "300-0", "c", "3"])
+
+        result = execute_command(["XRANGE", "stream", "200-0", "+"])
+        
+        assert len(result) == 2
+        assert result[0][0] == "200-0"
+        assert result[1][0] == "300-0"
+
+    def test_xrange_minus_to_plus(self):
+        """XRANGE with - to + gets all entries."""
+        execute_command(["XADD", "stream", "1-0", "a", "1"])
+        execute_command(["XADD", "stream", "2-0", "b", "2"])
+        execute_command(["XADD", "stream", "3-0", "c", "3"])
+
+        result = execute_command(["XRANGE", "stream", "-", "+"])
+        
+        assert len(result) == 3
+        assert result[0][0] == "1-0"
+        assert result[1][0] == "2-0"
+        assert result[2][0] == "3-0"
+
+    def test_xrange_minus_on_empty_stream(self):
+        """XRANGE with - on empty stream returns empty array."""
+        result = execute_command(["XRANGE", "nonexistent", "-", "+"])
+        assert result == []
+
     def test_xrange_preserves_order(self):
         """XRANGE returns entries in chronological order."""
         execute_command(["XADD", "stream", "1-0", "a", "1"])

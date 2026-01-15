@@ -9,6 +9,13 @@ from typing import Optional
 from app.exceptions import WrongTypeError
 
 
+# Stream ID constants
+MIN_STREAM_MS = 0
+MIN_STREAM_SEQ = 0
+MAX_STREAM_MS = 2**63 - 1
+MAX_STREAM_SEQ = 2**63 - 1
+
+
 class RedisType(Enum):
     """Enum for Redis data types."""
 
@@ -186,20 +193,29 @@ class RedisStream(RedisValue):
 
     def _parse_range_id(self, range_id: str, is_start: bool) -> tuple[int, int]:
         """
-        Parse range ID, handling optional sequence number.
+        Parse range ID, handling optional sequence number and special markers.
 
         Args:
-            range_id: Range ID (e.g., "123-456" or "123")
+            range_id: Range ID (e.g., "123-456", "123", "-", or "+")
             is_start: True if this is the start ID, False if end ID
 
         Returns:
             Tuple of (milliseconds, sequence_number)
         """
+        # Handle special markers
+        if range_id == "-":
+            # Minimum possible ID
+            return (MIN_STREAM_MS, MIN_STREAM_SEQ)
+        
+        if range_id == "+":
+            # Maximum possible ID
+            return (MAX_STREAM_MS, MAX_STREAM_SEQ)
+        
         if "-" not in range_id:
             # No sequence number provided
             ms_time = int(range_id)
-            # Start ID defaults to 0, end ID defaults to max int
-            seq_num = 0 if is_start else 2**63 - 1  # Max sequence for end range
+            # Start ID defaults to 0, end ID defaults to max sequence
+            seq_num = MIN_STREAM_SEQ if is_start else MAX_STREAM_SEQ
             return ms_time, seq_num
         
         # Has sequence number, parse normally
