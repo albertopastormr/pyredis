@@ -308,6 +308,27 @@ class InMemoryStorage(BaseStorage):
             self._data[key] = new_stream
             return entry_id_result
 
+    @require_type(RedisType.STREAM)
+    def xrange(self, key: str, start_id: str, end_id: str) -> list[tuple[str, dict[str, str]]]:
+        """
+        Get entries from a stream within ID range.
+
+        Time complexity: O(N) where N is the number of entries in the range
+
+        Args:
+            key: The stream key
+            start_id: Start ID (inclusive)
+            end_id: End ID (inclusive)
+
+        Returns:
+            List of tuples (entry_id, fields_dict), empty list if key doesn't exist
+        """
+        if key not in self._data:
+            return []
+
+        entries = self._data[key].xrange(start_id, end_id)
+        return [(entry.id, entry.fields) for entry in entries]
+
     def __len__(self) -> int:
         """Return number of keys."""
         return len(self._data)

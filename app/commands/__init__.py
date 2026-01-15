@@ -19,6 +19,7 @@ from .rpush import RpushCommand
 from .set import SetCommand
 from .type import TypeCommand
 from .xadd import XaddCommand
+from .xrange import XrangeCommand
 
 
 class CommandRegistry:
@@ -81,6 +82,7 @@ CommandRegistry.register(LpopCommand)
 CommandRegistry.register(BlpopCommand)
 CommandRegistry.register(TypeCommand)
 CommandRegistry.register(XaddCommand)
+CommandRegistry.register(XrangeCommand)
 
 
 __all__ = [

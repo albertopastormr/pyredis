@@ -158,6 +158,90 @@ class RedisStream(RedisValue):
     def get_type(self) -> RedisType:
         return RedisType.STREAM
 
+    def xrange(self, start_id: str, end_id: str) -> list[StreamEntry]:
+        """
+        Get entries within ID range (inclusive).
+
+        Args:
+            start_id: Start ID (e.g., "1526985054069-0" or "1526985054069")
+            end_id: End ID (e.g., "1526985054079-0" or "1526985054079")
+
+        Returns:
+            List of StreamEntry objects within the range
+        """
+        # Parse start and end IDs, handling optional sequence numbers
+        start_ms, start_seq = self._parse_range_id(start_id, is_start=True)
+        end_ms, end_seq = self._parse_range_id(end_id, is_start=False)
+
+        # Filter entries within range
+        result = []
+        for entry in self.entries:
+            entry_ms, entry_seq = self._parse_entry_id(entry.id)
+            
+            # Check if entry is within range (inclusive)
+            if self._is_in_range(entry_ms, entry_seq, start_ms, start_seq, end_ms, end_seq):
+                result.append(entry)
+
+        return result
+
+    def _parse_range_id(self, range_id: str, is_start: bool) -> tuple[int, int]:
+        """
+        Parse range ID, handling optional sequence number.
+
+        Args:
+            range_id: Range ID (e.g., "123-456" or "123")
+            is_start: True if this is the start ID, False if end ID
+
+        Returns:
+            Tuple of (milliseconds, sequence_number)
+        """
+        if "-" not in range_id:
+            # No sequence number provided
+            ms_time = int(range_id)
+            # Start ID defaults to 0, end ID defaults to max int
+            seq_num = 0 if is_start else 2**63 - 1  # Max sequence for end range
+            return ms_time, seq_num
+        
+        # Has sequence number, parse normally
+        return self._parse_entry_id(range_id)
+
+    def _is_in_range(
+        self,
+        entry_ms: int,
+        entry_seq: int,
+        start_ms: int,
+        start_seq: int,
+        end_ms: int,
+        end_seq: int,
+    ) -> bool:
+        """
+        Check if entry is within the specified range (inclusive).
+
+        Args:
+            entry_ms: Entry milliseconds
+            entry_seq: Entry sequence number
+            start_ms: Start milliseconds
+            start_seq: Start sequence number
+            end_ms: End milliseconds
+            end_seq: End sequence number
+
+        Returns:
+            True if entry is within range
+        """
+        # Check if entry >= start
+        if entry_ms < start_ms:
+            return False
+        if entry_ms == start_ms and entry_seq < start_seq:
+            return False
+
+        # Check if entry <= end
+        if entry_ms > end_ms:
+            return False
+        if entry_ms == end_ms and entry_seq > end_seq:
+            return False
+
+        return True
+
     def xadd(self, entry_id: str, fields: dict[str, str]) -> str:
         """
         Add entry to stream with ID validation or auto-generation.

@@ -170,3 +170,18 @@ class BaseStorage(ABC):
             The entry ID that was added
         """
         pass
+
+    @abstractmethod
+    def xrange(self, key: str, start_id: str, end_id: str) -> list[tuple[str, dict[str, str]]]:
+        """
+        Get entries from a stream within ID range.
+
+        Args:
+            key: The stream key
+            start_id: Start ID (inclusive)
+            end_id: End ID (inclusive)
+
+        Returns:
+            List of tuples (entry_id, fields_dict)
+        """
+        pass
