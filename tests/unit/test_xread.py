@@ -116,3 +116,76 @@ class TestXreadCommand:
         # Should not raise - lowercase 'streams' should work
         asyncio.run(xread_command.execute(["streams", "mystream", "0-0"]))
         mock_storage.xread.assert_called_once()
+
+
+class TestXreadBlockParsing:
+    """Test XREAD BLOCK argument parsing."""
+
+    @pytest.fixture
+    def xread_command(self):
+        return XreadCommand()
+
+    @pytest.fixture
+    def mock_storage(self):
+        return Mock()
+
+    @patch("app.commands.xread.get_storage")
+    def test_xread_block_with_data_returns_immediately(self, mock_get_storage, xread_command, mock_storage):
+        """XREAD BLOCK returns immediately if data exists."""
+        mock_get_storage.return_value = mock_storage
+        mock_storage.xread.return_value = [
+            ("mystream", [("1-1", {"field": "value"})])
+        ]
+
+        result = asyncio.run(
+            xread_command.execute(["BLOCK", "1000", "STREAMS", "mystream", "0-0"])
+        )
+
+        assert result == [["mystream", [["1-1", ["field", "value"]]]]]
+
+    @patch("app.commands.xread.get_storage")
+    def test_xread_block_zero_with_data(self, mock_get_storage, xread_command, mock_storage):
+        """XREAD BLOCK 0 returns immediately if data exists."""
+        mock_get_storage.return_value = mock_storage
+        mock_storage.xread.return_value = [
+            ("mystream", [("1-1", {"a": "1"})])
+        ]
+
+        result = asyncio.run(
+            xread_command.execute(["BLOCK", "0", "STREAMS", "mystream", "0-0"])
+        )
+
+        assert result is not None
+
+    def test_xread_block_missing_timeout(self, xread_command):
+        """XREAD BLOCK without timeout raises error."""
+        with pytest.raises(ValueError, match="wrong number of arguments"):
+            asyncio.run(xread_command.execute(["BLOCK"]))
+
+    def test_xread_block_invalid_timeout(self, xread_command):
+        """XREAD BLOCK with non-integer timeout raises error."""
+        with pytest.raises(ValueError, match="not an integer"):
+            asyncio.run(xread_command.execute(["BLOCK", "abc", "STREAMS", "mystream", "0-0"]))
+
+    def test_xread_block_negative_timeout(self, xread_command):
+        """XREAD BLOCK with negative timeout raises error."""
+        with pytest.raises(ValueError, match="negative"):
+            asyncio.run(xread_command.execute(["BLOCK", "-1", "STREAMS", "mystream", "0-0"]))
+
+    def test_xread_block_missing_streams(self, xread_command):
+        """XREAD BLOCK without STREAMS keyword raises error."""
+        with pytest.raises(ValueError, match="syntax error"):
+            asyncio.run(xread_command.execute(["BLOCK", "1000", "mystream", "0-0"]))
+
+    @patch("app.commands.xread.get_storage")
+    def test_xread_block_case_insensitive(self, mock_get_storage, xread_command, mock_storage):
+        """BLOCK keyword is case-insensitive."""
+        mock_get_storage.return_value = mock_storage
+        mock_storage.xread.return_value = [("mystream", [("1-1", {"a": "1"})])]
+
+        result = asyncio.run(
+            xread_command.execute(["block", "1000", "streams", "mystream", "0-0"])
+        )
+
+        assert result is not None
+

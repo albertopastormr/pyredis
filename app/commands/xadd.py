@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from app.blocking import notify_key
 from app.storage import get_storage
 
 from .base import BaseCommand
@@ -56,4 +57,8 @@ class XaddCommand(BaseCommand):
         storage = get_storage()
         result_id = storage.xadd(key, entry_id, fields)
 
+        # Notify any blocking XREAD clients waiting on this stream
+        notify_key(key, available_count=1)
+
         return result_id
+

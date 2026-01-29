@@ -172,3 +172,45 @@ class TestXreadErrors:
         result3 = execute_command(["XrEaD", "streams", "stream", "0-0"])
 
         assert result1 == result2 == result3
+
+
+class TestXreadBlockIntegration:
+    """Test XREAD BLOCK behavior."""
+
+    def test_xread_block_returns_immediately_with_data(self):
+        """XREAD BLOCK returns immediately if data exists."""
+        execute_command(["XADD", "stream", "1-0", "a", "1"])
+        execute_command(["XADD", "stream", "2-0", "b", "2"])
+
+        result = execute_command(["XREAD", "BLOCK", "1000", "STREAMS", "stream", "1-0"])
+
+        # Should return immediately with entry 2-0
+        assert result is not None
+        assert len(result) == 1
+        assert result[0][1][0][0] == "2-0"
+
+    def test_xread_block_timeout_returns_null(self):
+        """XREAD BLOCK returns null array on timeout."""
+        # Stream has no entries after 1-0
+        execute_command(["XADD", "stream", "1-0", "a", "1"])
+
+        result = execute_command(["XREAD", "BLOCK", "100", "STREAMS", "stream", "1-0"])
+
+        # Should timeout and return null array
+        assert result == {"null_array": True}
+
+    def test_xread_block_nonexistent_stream_timeout(self):
+        """XREAD BLOCK on non-existent stream times out."""
+        result = execute_command(["XREAD", "BLOCK", "100", "STREAMS", "nonexistent", "0-0"])
+
+        assert result == {"null_array": True}
+
+    def test_xread_block_zero_with_data(self):
+        """XREAD BLOCK 0 returns immediately if data exists."""
+        execute_command(["XADD", "stream", "1-0", "a", "1"])
+
+        result = execute_command(["XREAD", "BLOCK", "0", "STREAMS", "stream", "0-0"])
+
+        assert result is not None
+        assert result[0][1][0][0] == "1-0"
+

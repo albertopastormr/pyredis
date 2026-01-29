@@ -347,11 +347,9 @@ class InMemoryStorage(BaseStorage):
         result = []
 
         for key, start_id in streams:
-            # Skip non-existent keys
             if key not in self._data:
                 continue
 
-            # Type check: skip if not a stream
             value = self._data[key]
             if not isinstance(value, RedisStream):
                 from app.exceptions import WrongTypeError
