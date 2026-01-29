@@ -191,6 +191,33 @@ class RedisStream(RedisValue):
 
         return result
 
+    def xread(self, start_id: str) -> list[StreamEntry]:
+        """
+        Get entries with ID greater than start_id (exclusive).
+
+        Unlike xrange which is inclusive, xread is exclusive - it returns
+        entries with ID strictly greater than the specified start_id.
+
+        Args:
+            start_id: Start ID (exclusive), e.g., "1526985054069-0"
+
+        Returns:
+            List of StreamEntry objects with ID > start_id
+        """
+        start_ms, start_seq = self._parse_entry_id(start_id)
+
+        result = []
+        for entry in self.entries:
+            entry_ms, entry_seq = self._parse_entry_id(entry.id)
+
+            # Check if entry > start (exclusive)
+            if entry_ms > start_ms:
+                result.append(entry)
+            elif entry_ms == start_ms and entry_seq > start_seq:
+                result.append(entry)
+
+        return result
+
     def _parse_range_id(self, range_id: str, is_start: bool) -> tuple[int, int]:
         """
         Parse range ID, handling optional sequence number and special markers.

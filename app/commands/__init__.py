@@ -20,6 +20,7 @@ from .set import SetCommand
 from .type import TypeCommand
 from .xadd import XaddCommand
 from .xrange import XrangeCommand
+from .xread import XreadCommand
 
 
 class CommandRegistry:
@@ -83,6 +84,7 @@ CommandRegistry.register(BlpopCommand)
 CommandRegistry.register(TypeCommand)
 CommandRegistry.register(XaddCommand)
 CommandRegistry.register(XrangeCommand)
+CommandRegistry.register(XreadCommand)
 
 
 __all__ = [
@@ -100,4 +102,6 @@ __all__ = [
     "BlpopCommand",
     "TypeCommand",
     "XaddCommand",
+    "XrangeCommand",
+    "XreadCommand",
 ]

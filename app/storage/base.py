@@ -185,3 +185,19 @@ class BaseStorage(ABC):
             List of tuples (entry_id, fields_dict)
         """
         pass
+
+    @abstractmethod
+    def xread(
+        self, streams: list[tuple[str, str]]
+    ) -> list[tuple[str, list[tuple[str, dict[str, str]]]]]:
+        """
+        Read entries from multiple streams with ID greater than specified (exclusive).
+
+        Args:
+            streams: List of (stream_key, start_id) tuples
+
+        Returns:
+            List of (stream_key, entries) tuples where entries is list of (entry_id, fields_dict).
+            Only includes streams that have entries; empty streams are omitted.
+        """
+        pass

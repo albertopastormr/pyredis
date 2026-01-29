@@ -329,6 +329,41 @@ class InMemoryStorage(BaseStorage):
         entries = self._data[key].xrange(start_id, end_id)
         return [(entry.id, entry.fields) for entry in entries]
 
+    def xread(
+        self, streams: list[tuple[str, str]]
+    ) -> list[tuple[str, list[tuple[str, dict[str, str]]]]]:
+        """
+        Read entries from multiple streams with ID greater than specified (exclusive).
+
+        Time complexity: O(N) where N is the total number of entries across all streams
+
+        Args:
+            streams: List of (stream_key, start_id) tuples
+
+        Returns:
+            List of (stream_key, entries) tuples where entries is list of (entry_id, fields_dict).
+            Only includes streams that have entries; empty streams are omitted.
+        """
+        result = []
+
+        for key, start_id in streams:
+            # Skip non-existent keys
+            if key not in self._data:
+                continue
+
+            # Type check: skip if not a stream
+            value = self._data[key]
+            if not isinstance(value, RedisStream):
+                from app.exceptions import WrongTypeError
+                raise WrongTypeError()
+
+            entries = value.xread(start_id)
+            if entries:
+                formatted_entries = [(entry.id, entry.fields) for entry in entries]
+                result.append((key, formatted_entries))
+
+        return result
+
     def __len__(self) -> int:
         """Return number of keys."""
         return len(self._data)
