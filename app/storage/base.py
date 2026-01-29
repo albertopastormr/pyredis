@@ -201,3 +201,16 @@ class BaseStorage(ABC):
             Only includes streams that have entries; empty streams are omitted.
         """
         pass
+
+    @abstractmethod
+    def xinfo(self, key: str) -> Optional[dict]:
+        """
+        Get stream information.
+
+        Args:
+            key: The stream key
+
+        Returns:
+            Dict containing stream metadata, or None if key doesn't exist
+        """
+        pass

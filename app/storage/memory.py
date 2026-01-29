@@ -362,6 +362,26 @@ class InMemoryStorage(BaseStorage):
 
         return result
 
+    def xinfo(self, key: str) -> Optional[dict]:
+        """
+        Get stream information.
+
+        Args:
+            key: The stream key
+
+        Returns:
+            Dict containing stream metadata, or None if key doesn't exist
+        """
+        if key not in self._data:
+            return None
+
+        value = self._data[key]
+        if not isinstance(value, RedisStream):
+            from app.exceptions import WrongTypeError
+            raise WrongTypeError()
+
+        return value.get_info()
+
     def __len__(self) -> int:
         """Return number of keys."""
         return len(self._data)

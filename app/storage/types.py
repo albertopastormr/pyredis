@@ -439,6 +439,31 @@ class RedisStream(RedisValue):
                 raise
             raise ValueError("ERR Invalid stream ID specified as stream command argument")
 
+    def get_info(self) -> dict:
+        """
+        Get stream information for XINFO command.
+
+        Returns:
+            Dict containing stream metadata
+        """
+        if not self.entries:
+            return {
+                "length": 0,
+                "last-generated-id": "0-0",
+                "first-entry": None,
+                "last-entry": None,
+            }
+
+        first_entry = self.entries[0]
+        last_entry = self.entries[-1]
+
+        return {
+            "length": len(self.entries),
+            "last-generated-id": last_entry.id,
+            "first-entry": (first_entry.id, first_entry.fields),
+            "last-entry": (last_entry.id, last_entry.fields),
+        }
+
     def __len__(self) -> int:
         """Support len() built-in."""
         return len(self.entries)

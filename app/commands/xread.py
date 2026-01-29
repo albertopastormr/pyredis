@@ -111,6 +111,31 @@ class XreadCommand(BaseCommand):
         """
         block_timeout, streams = self._parse_args(args)
 
+        # Resolve '$' IDs using XINFO
+        resolved_streams = []
+        storage = get_storage()
+        
+        for key, start_id in streams:
+            if start_id == "$":
+                # Get last generated ID from XINFO
+                # If key doesn't exist or is empty, use 0-0
+                try:
+                    info = storage.xinfo(key)
+                    if info:
+                        resolved_id = info["last-generated-id"]
+                    else:
+                        resolved_id = "0-0"
+                except Exception:
+                    # On error (e.g. wrong type), keep "$" (storage.xread will likely fail or return nothing)
+                    # Ideally we should fail early if wrong type, but storage.xread handles it
+                     resolved_id = "$" 
+                resolved_streams.append((key, resolved_id))
+            else:
+                resolved_streams.append((key, start_id))
+
+        # Use resolved streams for queries
+        streams = resolved_streams
+
         # Try immediate read
         result = self._query_streams(streams)
         if result is not None:

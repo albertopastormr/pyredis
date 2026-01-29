@@ -1,4 +1,4 @@
-# Redis Implementation in Python
+# Pydis/PyRedis (or Repydis - Redis Implementation in Python)
 
 [![progress-banner](https://backend.codecrafters.io/progress/redis/1d22e86b-0b02-4811-820d-928c2a581686)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
 

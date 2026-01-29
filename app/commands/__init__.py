@@ -19,6 +19,7 @@ from .rpush import RpushCommand
 from .set import SetCommand
 from .type import TypeCommand
 from .xadd import XaddCommand
+from .xinfo import XinfoCommand
 from .xrange import XrangeCommand
 from .xread import XreadCommand
 
@@ -85,6 +86,7 @@ CommandRegistry.register(TypeCommand)
 CommandRegistry.register(XaddCommand)
 CommandRegistry.register(XrangeCommand)
 CommandRegistry.register(XreadCommand)
+CommandRegistry.register(XinfoCommand)
 
 
 __all__ = [
@@ -104,4 +106,5 @@ __all__ = [
     "XaddCommand",
     "XrangeCommand",
     "XreadCommand",
+    "XinfoCommand",
 ]
