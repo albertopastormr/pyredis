@@ -61,6 +61,22 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
+    def incr(self, key: str) -> int:
+        """
+        Increment the integer value of a key by one.
+
+        Args:
+            key: The key to increment
+
+        Returns:
+            The new value after incrementing
+
+        Raises:
+            ValueError: If the key contains a value that cannot be represented as integer
+        """
+        pass
+
+    @abstractmethod
     def llen(self, key: str) -> int:
         """Get list length. Returns 0 if key doesn't exist."""
         pass

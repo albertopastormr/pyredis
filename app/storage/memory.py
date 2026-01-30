@@ -102,6 +102,41 @@ class InMemoryStorage(BaseStorage):
             return True
         return False
 
+    @require_type(RedisType.STRING)
+    def incr(self, key: str) -> int:
+        """
+        Increment the integer value of a key by one.
+
+        If the key does not exist, it is set to 0 before performing the operation.
+        Time complexity: O(1)
+
+        Args:
+            key: The key to increment
+
+        Returns:
+            The new value after incrementing
+
+        Raises:
+            ValueError: If the key contains a value that cannot be represented as integer
+        """
+        # Get current value
+        current_value = self.get(key)
+        
+        # If key doesn't exist, treat as 0
+        if current_value is None:
+            new_value = 1
+            self.set(key, str(new_value))
+            return new_value
+        
+        # Try to parse and increment
+        try:
+            int_value = int(current_value)
+            new_value = int_value + 1
+            self.set(key, str(new_value))
+            return new_value
+        except ValueError as e:
+            raise ValueError("value is not an integer or out of range") from e
+
     def exists(self, key: str) -> bool:
         """
         Check if key exists and is not expired.
