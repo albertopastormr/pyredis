@@ -13,8 +13,22 @@ class BaseCommand(ABC):
         """Return the command name (e.g., 'PING', 'GET')."""
         pass
 
+    @property
+    def bypasses_transaction_queue(self) -> bool:
+        """
+        Whether this command bypasses transaction queuing.
+        
+        Transaction control commands (MULTI, EXEC, DISCARD) should return True.
+        All other commands should return False (default).
+        
+        Returns:
+            True if command should execute even when in a transaction,
+            False if command should be queued when in a transaction.
+        """
+        return False
+
     @abstractmethod
-    async def execute(self, args: list[str]) -> Any:
+    async def execute(self, args: list[str], connection_id: Any = None) -> Any:
         """
         Execute the command asynchronously.
 
@@ -23,6 +37,7 @@ class BaseCommand(ABC):
 
         Args:
             args: Command arguments (not including command name)
+            connection_id: Optional connection identifier for transaction tracking
 
         Returns:
             Command result

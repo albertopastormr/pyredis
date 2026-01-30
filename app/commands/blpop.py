@@ -39,7 +39,7 @@ class BlpopCommand(BaseCommand):
             pass
         return None
 
-    async def execute(self, args: list[str]) -> Any:
+    async def execute(self, args: list[str], connection_id: Any = None) -> Any:
         """
         Execute BLPOP command asynchronously (event-driven, no polling).
 

@@ -119,7 +119,6 @@ class InMemoryStorage(BaseStorage):
         Raises:
             ValueError: If the key contains a value that cannot be represented as integer
         """
-        # Get current value
         current_value = self.get(key)
         
         # If key doesn't exist, treat as 0

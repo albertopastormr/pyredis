@@ -22,7 +22,7 @@ class LpopCommand(BaseCommand):
     def name(self) -> str:
         return "LPOP"
 
-    async def execute(self, args: list[str]) -> Any:
+    async def execute(self, args: list[str], connection_id: Any = None) -> Any:
         """
         Execute LPOP command.
 

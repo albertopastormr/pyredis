@@ -22,7 +22,7 @@ class XaddCommand(BaseCommand):
     def name(self) -> str:
         return "XADD"
 
-    async def execute(self, args: list[str]) -> Any:
+    async def execute(self, args: list[str], connection_id: Any = None) -> Any:
         """
         Execute XADD command.
 

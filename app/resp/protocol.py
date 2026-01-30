@@ -178,6 +178,13 @@ class RESPEncoder:
             if "error" in data:
                 return f"-{data['error']}\r\n".encode()
 
+            # Queued command response (MULTI transaction)
+            if "queued" in data:
+                value = data["queued"]
+                if isinstance(value, str):
+                    return f"+{value}\r\n".encode()
+                return RESPEncoder.encode(value)
+
             # Null array marker (for BLPOP timeout)
             if "null_array" in data:
                 return b"*-1\r\n"

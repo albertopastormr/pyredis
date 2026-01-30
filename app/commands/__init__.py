@@ -8,13 +8,16 @@ from typing import Any, Dict, List, Type
 
 from .base import BaseCommand
 from .blpop import BlpopCommand
+from .discard import DiscardCommand
 from .echo import EchoCommand
+from .exec import ExecCommand
 from .get import GetCommand
 from .incr import IncrCommand
 from .llen import LlenCommand
 from .lpop import LpopCommand
 from .lpush import LpushCommand
 from .lrange import LrangeCommand
+from .multi import MultiCommand
 from .ping import PingCommand
 from .rpush import RpushCommand
 from .set import SetCommand
@@ -78,6 +81,9 @@ CommandRegistry.register(EchoCommand)
 CommandRegistry.register(SetCommand)
 CommandRegistry.register(GetCommand)
 CommandRegistry.register(IncrCommand)
+CommandRegistry.register(MultiCommand)
+CommandRegistry.register(ExecCommand)
+CommandRegistry.register(DiscardCommand)
 CommandRegistry.register(RpushCommand)
 CommandRegistry.register(LrangeCommand)
 CommandRegistry.register(LpushCommand)
@@ -99,6 +105,9 @@ __all__ = [
     "SetCommand",
     "GetCommand",
     "IncrCommand",
+    "MultiCommand",
+    "ExecCommand",
+    "DiscardCommand",
     "RpushCommand",
     "LrangeCommand",
     "LpushCommand",
