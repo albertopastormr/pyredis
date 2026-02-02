@@ -19,6 +19,8 @@ class ReplicationConfig:
     role: Role
     master_host: Optional[str] = None
     master_port: Optional[int] = None
+    master_replid: str = "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
+    master_repl_offset: int = 0
 
     def is_master(self) -> bool:
         """Check if this server is a master."""

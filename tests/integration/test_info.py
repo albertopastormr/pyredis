@@ -33,6 +33,8 @@ class TestInfoIntegration:
         assert isinstance(result, str)
         assert "# Replication" in result
         assert "role:master" in result
+        assert "master_replid:8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb" in result
+        assert "master_repl_offset:0" in result
 
         # Encode response (should be bulk string)
         response = RESPEncoder.encode(result)
@@ -40,6 +42,8 @@ class TestInfoIntegration:
         # Verify it's a valid RESP bulk string
         assert response.startswith(b"$")
         assert b"# Replication\nrole:master" in response
+        assert b"master_replid:8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb" in response
+        assert b"master_repl_offset:0" in response
 
     def test_info_replication_slave_role(self):
         """INFO replication returns slave role when configured as replica."""

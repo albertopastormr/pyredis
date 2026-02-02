@@ -28,6 +28,8 @@ class TestInfoCommand:
         assert isinstance(result, str)
         assert "# Replication" in result
         assert "role:master" in result
+        assert "master_replid:8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb" in result
+        assert "master_repl_offset:0" in result
 
     @patch("app.commands.info.ServerConfig.get_replication_config")
     def test_info_replication_slave_role(self, mock_get_config, info_command):
@@ -91,9 +93,11 @@ class TestInfoCommand:
         result = asyncio.run(info_command.execute(["replication"]))
 
         lines = result.split("\n")
-        assert len(lines) == 2
+        assert len(lines) == 4
         assert lines[0] == "# Replication"
         assert lines[1] == "role:master"
+        assert lines[2] == "master_replid:8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
+        assert lines[3] == "master_repl_offset:0"
 
     def test_info_bypasses_transaction_queue(self, info_command):
         """INFO command does not bypass transaction queue by default."""

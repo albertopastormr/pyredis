@@ -52,5 +52,7 @@ class InfoCommand(BaseCommand):
         lines = [
             "# Replication",
             f"role:{repl_config.role.value}",
+            f"master_replid:{repl_config.master_replid}",
+            f"master_repl_offset:{repl_config.master_repl_offset}",
         ]
         return "\n".join(lines)
