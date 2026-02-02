@@ -1,0 +1,86 @@
+"""Integration tests for INFO command."""
+
+from app.resp import RESPEncoder, RESPParser
+from tests.helpers import execute_command
+
+
+class TestInfoIntegration:
+    """Test INFO command full flow: parse → execute → encode."""
+
+    def test_info_replication_full_flow(self):
+        """Complete INFO replication flow."""
+        # Client request: INFO replication
+        request = b"*2\r\n$4\r\nINFO\r\n$11\r\nreplication\r\n"
+
+        # Parse
+        command = RESPParser.parse(request)
+        assert command == ["INFO", "replication"]
+
+        # Execute
+        result = execute_command(command)
+        assert isinstance(result, str)
+        assert "# Replication" in result
+        assert "role:master" in result
+
+        # Encode response (should be bulk string)
+        response = RESPEncoder.encode(result)
+        
+        # Verify it's a valid RESP bulk string
+        assert response.startswith(b"$")
+        assert b"# Replication\nrole:master" in response
+
+    def test_info_no_args_full_flow(self):
+        """INFO without arguments full flow."""
+        # Client request: INFO
+        request = b"*1\r\n$4\r\nINFO\r\n"
+
+        # Parse
+        command = RESPParser.parse(request)
+        assert command == ["INFO"]
+
+        # Execute
+        result = execute_command(command)
+        assert isinstance(result, str)
+        assert "role:master" in result
+
+        # Encode and verify
+        response = RESPEncoder.encode(result)
+        assert response.startswith(b"$")
+
+    def test_info_case_insensitive_integration(self):
+        """INFO section is case-insensitive in full flow."""
+        # Test with uppercase
+        request = b"*2\r\n$4\r\nINFO\r\n$11\r\nREPLICATION\r\n"
+        command = RESPParser.parse(request)
+        result = execute_command(command)
+        
+        assert "role:master" in result
+
+    def test_info_unsupported_section_integration(self):
+        """INFO with unsupported section returns empty string."""
+        # Client request: INFO memory
+        request = b"*2\r\n$4\r\nINFO\r\n$6\r\nmemory\r\n"
+
+        command = RESPParser.parse(request)
+        result = execute_command(command)
+        
+        # Should return empty string
+        assert result == ""
+
+        # Encode and verify it's a valid bulk string
+        response = RESPEncoder.encode(result)
+        assert response == b"$0\r\n\r\n"
+
+    def test_info_response_parseable(self):
+        """INFO response can be parsed back."""
+        request = b"*2\r\n$4\r\nINFO\r\n$11\r\nreplication\r\n"
+        
+        command = RESPParser.parse(request)
+        result = execute_command(command)
+        response = RESPEncoder.encode(result)
+        
+        # Parse the response back
+        parsed_result = RESPParser.parse(response)
+        assert isinstance(parsed_result, str)
+        assert "role:master" in parsed_result
+        assert parsed_result == result

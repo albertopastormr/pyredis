@@ -13,6 +13,7 @@ from .echo import EchoCommand
 from .exec import ExecCommand
 from .get import GetCommand
 from .incr import IncrCommand
+from .info import InfoCommand
 from .llen import LlenCommand
 from .lpop import LpopCommand
 from .lpush import LpushCommand
@@ -81,6 +82,7 @@ CommandRegistry.register(EchoCommand)
 CommandRegistry.register(SetCommand)
 CommandRegistry.register(GetCommand)
 CommandRegistry.register(IncrCommand)
+CommandRegistry.register(InfoCommand)
 CommandRegistry.register(MultiCommand)
 CommandRegistry.register(ExecCommand)
 CommandRegistry.register(DiscardCommand)
@@ -105,6 +107,7 @@ __all__ = [
     "SetCommand",
     "GetCommand",
     "IncrCommand",
+    "InfoCommand",
     "MultiCommand",
     "ExecCommand",
     "DiscardCommand",
