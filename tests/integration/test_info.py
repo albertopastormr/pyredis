@@ -1,7 +1,19 @@
 """Integration tests for INFO command."""
 
+import pytest
+
+from app.config import Role, ServerConfig
 from app.resp import RESPEncoder, RESPParser
 from tests.helpers import execute_command
+
+
+@pytest.fixture(autouse=True)
+def reset_server_config():
+    """Reset server config before each test."""
+    ServerConfig.reset()
+    ServerConfig.initialize(role=Role.MASTER)
+    yield
+    ServerConfig.reset()
 
 
 class TestInfoIntegration:
@@ -28,6 +40,28 @@ class TestInfoIntegration:
         # Verify it's a valid RESP bulk string
         assert response.startswith(b"$")
         assert b"# Replication\nrole:master" in response
+
+    def test_info_replication_slave_role(self):
+        """INFO replication returns slave role when configured as replica."""
+        # Configure as slave
+        ServerConfig.initialize(
+            role=Role.SLAVE,
+            master_host="localhost",
+            master_port=6379,
+        )
+
+        request = b"*2\r\n$4\r\nINFO\r\n$11\r\nreplication\r\n"
+        command = RESPParser.parse(request)
+        result = execute_command(command)
+
+        assert isinstance(result, str)
+        assert "# Replication" in result
+        assert "role:slave" in result
+
+        # Encode and verify
+        response = RESPEncoder.encode(result)
+        assert response.startswith(b"$")
+        assert b"role:slave" in response
 
     def test_info_no_args_full_flow(self):
         """INFO without arguments full flow."""
@@ -84,3 +118,4 @@ class TestInfoIntegration:
         assert isinstance(parsed_result, str)
         assert "role:master" in parsed_result
         assert parsed_result == result
+

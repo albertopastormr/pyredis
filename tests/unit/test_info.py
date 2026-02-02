@@ -1,10 +1,12 @@
 """Unit tests for INFO command."""
 
 import asyncio
+from unittest.mock import patch
 
 import pytest
 
 from app.commands.info import InfoCommand
+from app.config import ReplicationConfig, Role
 
 
 @pytest.fixture
@@ -16,24 +18,48 @@ def info_command():
 class TestInfoCommand:
     """Test INFO command in isolation."""
 
-    def test_info_replication_section(self, info_command):
-        """INFO replication returns replication section."""
+    @patch("app.commands.info.ServerConfig.get_replication_config")
+    def test_info_replication_master_role(self, mock_get_config, info_command):
+        """INFO replication returns master role when configured as master."""
+        mock_get_config.return_value = ReplicationConfig(role=Role.MASTER)
+
         result = asyncio.run(info_command.execute(["replication"]))
 
         assert isinstance(result, str)
         assert "# Replication" in result
         assert "role:master" in result
 
-    def test_info_no_args_returns_replication(self, info_command):
+    @patch("app.commands.info.ServerConfig.get_replication_config")
+    def test_info_replication_slave_role(self, mock_get_config, info_command):
+        """INFO replication returns slave role when configured as replica."""
+        mock_get_config.return_value = ReplicationConfig(
+            role=Role.SLAVE,
+            master_host="localhost",
+            master_port=6379,
+        )
+
+        result = asyncio.run(info_command.execute(["replication"]))
+
+        assert isinstance(result, str)
+        assert "# Replication" in result
+        assert "role:slave" in result
+
+    @patch("app.commands.info.ServerConfig.get_replication_config")
+    def test_info_no_args_returns_replication(self, mock_get_config, info_command):
         """INFO without args defaults to replication section."""
+        mock_get_config.return_value = ReplicationConfig(role=Role.MASTER)
+
         result = asyncio.run(info_command.execute([]))
 
         assert isinstance(result, str)
         assert "# Replication" in result
         assert "role:master" in result
 
-    def test_info_case_insensitive(self, info_command):
+    @patch("app.commands.info.ServerConfig.get_replication_config")
+    def test_info_case_insensitive(self, mock_get_config, info_command):
         """INFO section parameter is case-insensitive."""
+        mock_get_config.return_value = ReplicationConfig(role=Role.MASTER)
+
         result_lower = asyncio.run(info_command.execute(["replication"]))
         result_upper = asyncio.run(info_command.execute(["REPLICATION"]))
         result_mixed = asyncio.run(info_command.execute(["RePLiCaTion"]))
@@ -57,8 +83,11 @@ class TestInfoCommand:
         """Command has correct name."""
         assert info_command.name == "INFO"
 
-    def test_info_format(self, info_command):
+    @patch("app.commands.info.ServerConfig.get_replication_config")
+    def test_info_format(self, mock_get_config, info_command):
         """INFO response has correct format with newlines."""
+        mock_get_config.return_value = ReplicationConfig(role=Role.MASTER)
+        
         result = asyncio.run(info_command.execute(["replication"]))
 
         lines = result.split("\n")
