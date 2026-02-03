@@ -2,9 +2,17 @@
 
 import argparse
 import asyncio
+import logging
 
 from .config import Role, ServerConfig
+from .replication import connect_to_master
 from .server import start_server
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 
 
 async def main() -> None:
@@ -40,6 +48,9 @@ async def main() -> None:
                 master_host=master_host,
                 master_port=master_port,
             )
+            
+            # Start handshake with master in background
+            asyncio.create_task(connect_to_master())
         except ValueError as e:
             print(f"Error: {e}")
             return
