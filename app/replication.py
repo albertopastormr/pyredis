@@ -5,7 +5,7 @@ import logging
 from typing import Optional
 
 from .config import ServerConfig
-from .resp import RESPEncoder
+from .resp import RESPEncoder, RESPParser
 
 logger = logging.getLogger(__name__)
 
@@ -59,15 +59,73 @@ class ReplicationClient:
         await self.writer.drain()
         logger.info("✅ PING sent to master")
 
+    async def send_replconf_listening_port(self, port: int) -> None:
+        """
+        Send REPLCONF listening-port command to master.
+        
+        Args:
+            port: The port this replica is listening on
+            
+        The command is sent as: REPLCONF listening-port <PORT>
+        """
+        if not self.writer:
+            raise RuntimeError("Not connected to master")
+
+        replconf_command = RESPEncoder.encode(["REPLCONF", "listening-port", str(port)])
+        
+        logger.info(f"Sending REPLCONF listening-port {port} to master...")
+        self.writer.write(replconf_command)
+        await self.writer.drain()
+        
+        # Read and parse response (expecting +OK\r\n)
+        response_data = await self.reader.read(1024)
+        response = RESPParser.parse(response_data)
+        if response != "OK":
+            raise RuntimeError(f"Unexpected response to REPLCONF listening-port: {response}")
+        
+        logger.info("✅ REPLCONF listening-port acknowledged")
+
+    async def send_replconf_capa(self) -> None:
+        """
+        Send REPLCONF capa psync2 command to master.
+        
+        This notifies the master that the replica supports PSYNC2 protocol.
+        """
+        if not self.writer:
+            raise RuntimeError("Not connected to master")
+
+        replconf_command = RESPEncoder.encode(["REPLCONF", "capa", "psync2"])
+        
+        logger.info("Sending REPLCONF capa psync2 to master...")
+        self.writer.write(replconf_command)
+        await self.writer.drain()
+        
+        # Read and parse response (expecting +OK\r\n)
+        response_data = await self.reader.read(1024)
+        response = RESPParser.parse(response_data)
+        if response != "OK":
+            raise RuntimeError(f"Unexpected response to REPLCONF capa: {response}")
+        
+        logger.info("✅ REPLCONF capa acknowledged")
+
+
     async def start_handshake(self) -> None:
         """
         Perform the complete handshake with the master.
 
-        For now, this only sends PING. Future steps will include REPLCONF and PSYNC.
+        Sequence:
+        1. PING - Test connection
+        2. REPLCONF listening-port - Tell master our listening port
+        3. REPLCONF capa psync2 - Tell master our capabilities
         """
         await self.connect()
         await self.send_ping()
-        # TODO: Add REPLCONF and PSYNC in later stages
+        
+        listening_port = ServerConfig.get_listening_port()
+        await self.send_replconf_listening_port(listening_port)
+        await self.send_replconf_capa()
+        
+        logger.info("✅ Handshake complete")
 
     async def close(self) -> None:
         """Close the connection to master."""

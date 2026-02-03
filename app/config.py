@@ -41,12 +41,14 @@ class ServerConfig:
 
     _instance: Optional["ServerConfig"] = None
     _replication: ReplicationConfig
+    _listening_port: int = 6379  # Default port
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             # Default to master role
             cls._instance._replication = ReplicationConfig(role=Role.MASTER)
+            cls._instance._listening_port = 6379
         return cls._instance
 
     @classmethod
@@ -55,6 +57,7 @@ class ServerConfig:
         role: Role = Role.MASTER,
         master_host: Optional[str] = None,
         master_port: Optional[int] = None,
+        listening_port: int = 6379,
     ) -> None:
         """
         Initialize the server configuration.
@@ -63,6 +66,7 @@ class ServerConfig:
             role: Server role (Role.MASTER or Role.SLAVE)
             master_host: Master server host (for replicas)
             master_port: Master server port (for replicas)
+            listening_port: Port this server is listening on
         """
         instance = cls()
         instance._replication = ReplicationConfig(
@@ -70,6 +74,7 @@ class ServerConfig:
             master_host=master_host,
             master_port=master_port,
         )
+        instance._listening_port = listening_port
 
     @classmethod
     def get_replication_config(cls) -> ReplicationConfig:
@@ -81,6 +86,17 @@ class ServerConfig:
         """
         instance = cls()
         return instance._replication
+
+    @classmethod
+    def get_listening_port(cls) -> int:
+        """
+        Get the port this server is listening on.
+
+        Returns:
+            Listening port number
+        """
+        instance = cls()
+        return instance._listening_port
 
     @classmethod
     def reset(cls) -> None:

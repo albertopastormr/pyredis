@@ -73,22 +73,104 @@ class TestReplicationClient:
         mock_writer.drain.assert_called_once()
 
     @patch("asyncio.open_connection")
-    def test_start_handshake(self, mock_open_connection, replication_client):
-        """start_handshake connects and sends PING."""
+    def test_send_replconf_listening_port(self, mock_open_connection, replication_client):
+        """send_replconf_listening_port sends correct command and reads response."""
+        # Mock the connection
         mock_reader = AsyncMock()
+        mock_reader.read = AsyncMock(return_value=b"+OK\r\n")
         mock_writer = MagicMock()
         mock_writer.drain = AsyncMock()
         mock_open_connection.return_value = (mock_reader, mock_writer)
+
+        asyncio.run(replication_client.connect())
+        asyncio.run(replication_client.send_replconf_listening_port(6380))
+
+        # Verify REPLCONF was written
+        assert mock_writer.write.call_count == 1
+        written_data = mock_writer.write.call_args[0][0]
+        
+        # Verify RESP format: *3\r\n$8\r\nREPLCONF\r\n$14\r\nlistening-port\r\n$4\r\n6380\r\n
+        assert written_data == b"*3\r\n$8\r\nREPLCONF\r\n$14\r\nlistening-port\r\n$4\r\n6380\r\n"
+        mock_reader.read.assert_called_once()
+
+    @patch("asyncio.open_connection")
+    def test_send_replconf_capa(self, mock_open_connection, replication_client):
+        """send_replconf_capa sends correct command and reads response."""
+        # Mock the connection
+        mock_reader = AsyncMock()
+        mock_reader.read = AsyncMock(return_value=b"+OK\r\n")
+        mock_writer = MagicMock()
+        mock_writer.drain = AsyncMock()
+        mock_open_connection.return_value = (mock_reader, mock_writer)
+
+        asyncio.run(replication_client.connect())
+        asyncio.run(replication_client.send_replconf_capa())
+
+        # Verify REPLCONF was written
+        assert mock_writer.write.call_count == 1
+        written_data = mock_writer.write.call_args[0][0]
+        
+        # Verify RESP format: *3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$6\r\npsync2\r\n
+        assert written_data == b"*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$6\r\npsync2\r\n"
+        mock_reader.read.assert_called_once()
+
+    def test_send_replconf_requires_connection(self, replication_client):
+        """send_replconf methods raise error when not connected."""
+        with pytest.raises(RuntimeError, match="Not connected to master"):
+            asyncio.run(replication_client.send_replconf_listening_port(6380))
+        
+        with pytest.raises(RuntimeError, match="Not connected to master"):
+            asyncio.run(replication_client.send_replconf_capa())
+
+    @patch("asyncio.open_connection")
+    def test_replconf_validates_response(self, mock_open_connection, replication_client):
+        """REPLCONF methods validate master response."""
+        # Mock the connection with bad response
+        mock_reader = AsyncMock()
+        mock_reader.read = AsyncMock(return_value=b"-ERR unknown command\r\n")
+        mock_writer = MagicMock()
+        mock_writer.drain = AsyncMock()
+        mock_open_connection.return_value = (mock_reader, mock_writer)
+
+        asyncio.run(replication_client.connect())
+        
+        # Should raise error for bad response
+        with pytest.raises(RuntimeError, match="Unexpected response"):
+            asyncio.run(replication_client.send_replconf_listening_port(6380))
+
+    @patch("asyncio.open_connection")
+    @patch("app.replication.ServerConfig.get_listening_port")
+    def test_start_handshake(self, mock_get_port, mock_open_connection, replication_client):
+        """start_handshake performs full handshake: PING + REPLCONF × 2."""
+        mock_reader = AsyncMock()
+        # Mock responses for REPLCONF commands
+        mock_reader.read = AsyncMock(side_effect=[b"+OK\r\n", b"+OK\r\n"])
+        mock_writer = MagicMock()
+        mock_writer.drain = AsyncMock()
+        mock_open_connection.return_value = (mock_reader, mock_writer)
+        mock_get_port.return_value = 6380
 
         asyncio.run(replication_client.start_handshake())
 
         # Verify connection was made
         mock_open_connection.assert_called_once_with("localhost", 6379)
         
-        # Verify PING was sent
-        mock_writer.write.assert_called_once()
-        written_data = mock_writer.write.call_args[0][0]
-        assert written_data == b"*1\r\n$4\r\nPING\r\n"
+        # Verify commands were sent: PING + REPLCONF x 2
+        assert mock_writer.write.call_count == 3
+        
+        # Verify PING
+        ping_data = mock_writer.write.call_args_list[0][0][0]
+        assert ping_data == b"*1\r\n$4\r\nPING\r\n"
+        
+        # Verify REPLCONF listening-port
+        replconf_port_data = mock_writer.write.call_args_list[1][0][0]
+        assert b"REPLCONF" in replconf_port_data
+        assert b"listening-port" in replconf_port_data
+        
+        # Verify REPLCONF capa
+        replconf_capa_data = mock_writer.write.call_args_list[2][0][0]
+        assert b"REPLCONF" in replconf_capa_data
+        assert b"psync2" in replconf_capa_data
 
 
 class TestConnectToMaster:

@@ -47,6 +47,7 @@ async def main() -> None:
                 role=Role.SLAVE,
                 master_host=master_host,
                 master_port=master_port,
+                listening_port=args.port,
             )
             
             # Start handshake with master in background
@@ -56,7 +57,7 @@ async def main() -> None:
             return
     else:
         # Default to master role
-        ServerConfig.initialize(role=Role.MASTER)
+        ServerConfig.initialize(role=Role.MASTER, listening_port=args.port)
 
     await start_server(host="localhost", port=args.port)
 

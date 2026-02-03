@@ -62,4 +62,32 @@ class TestReplicationIntegration:
         with pytest.raises(RuntimeError, match="Not connected to master"):
             asyncio.run(attempt_send())
 
+    def test_replconf_listening_port_encoding(self):
+        """Verify REPLCONF listening-port uses correct RESP encoding."""
+        # Encode the command
+        encoded = RESPEncoder.encode(["REPLCONF", "listening-port", "6380"])
+        
+        # Verify exact RESP format
+        assert encoded == b"*3\r\n$8\r\nREPLCONF\r\n$14\r\nlistening-port\r\n$4\r\n6380\r\n"
+        
+        # Break down the format
+        assert encoded.startswith(b"*3\r\n")  # Array with 3 elements
+        assert b"$8\r\nREPLCONF\r\n" in encoded  # Command name
+        assert b"$14\r\nlistening-port\r\n" in encoded  # Subcommand
+        assert b"$4\r\n6380\r\n" in encoded  # Port value
+
+    def test_replconf_capa_encoding(self):
+        """Verify REPLCONF capa psync2 uses correct RESP encoding."""
+        # Encode the command
+        encoded = RESPEncoder.encode(["REPLCONF", "capa", "psync2"])
+        
+        # Verify exact RESP format
+        assert encoded == b"*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$6\r\npsync2\r\n"
+        
+        # Break down the format
+        assert encoded.startswith(b"*3\r\n")  # Array with 3 elements
+        assert b"$8\r\nREPLCONF\r\n" in encoded  # Command name
+        assert b"$4\r\ncapa\r\n" in encoded  # Subcommand
+        assert b"$6\r\npsync2\r\n" in encoded  # Capability
+
 
