@@ -113,6 +113,42 @@ class ReplicationClient:
         
         logger.info("✅ REPLCONF capa acknowledged")
 
+    async def send_psync(self, repl_id: str = "?", offset: int = -1) -> None:
+        """
+        Send PSYNC command to master to initiate synchronization.
+        
+        Args:
+            repl_id: Replication ID (use "?" for initial sync)
+            offset: Replication offset (use -1 for initial sync)
+            
+        The command is sent as: PSYNC <repl_id> <offset>
+        For initial sync: PSYNC ? -1
+        
+        The master responds with: +FULLRESYNC <REPL_ID> 0\r\n
+        """
+        if not self.writer:
+            raise RuntimeError("Not connected to master")
+
+        psync_command = RESPEncoder.encode(["PSYNC", repl_id, str(offset)])
+        
+        logger.info(f"Sending PSYNC {repl_id} {offset} to master...")
+        self.writer.write(psync_command)
+        await self.writer.drain()
+        
+        response_data = await self.reader.read(1024)
+        response = RESPParser.parse(response_data)
+        
+        if not isinstance(response, str) or not response.startswith("FULLRESYNC"):
+            raise RuntimeError(f"Unexpected response to PSYNC: {response}")
+        
+        parts = response.split()
+        if len(parts) == 3:
+            master_repl_id = parts[1]
+            master_offset = parts[2]
+            logger.info(f"✅ PSYNC acknowledged: FULLRESYNC {master_repl_id} {master_offset}")
+        else:
+            logger.info(f"✅ PSYNC acknowledged: {response}")
+
 
     async def start_handshake(self) -> None:
         """
@@ -122,6 +158,7 @@ class ReplicationClient:
         1. PING - Test connection
         2. REPLCONF listening-port - Tell master our listening port
         3. REPLCONF capa psync2 - Tell master our capabilities
+        4. PSYNC - Initiate synchronization
         """
         await self.connect()
         await self.send_ping()
@@ -129,6 +166,7 @@ class ReplicationClient:
         listening_port = ServerConfig.get_listening_port()
         await self.send_replconf_listening_port(listening_port)
         await self.send_replconf_capa()
+        await self.send_psync()
         
         logger.info("✅ Handshake complete")
 

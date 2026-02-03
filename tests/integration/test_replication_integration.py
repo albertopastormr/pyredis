@@ -90,4 +90,18 @@ class TestReplicationIntegration:
         assert b"$4\r\ncapa\r\n" in encoded  # Subcommand
         assert b"$6\r\npsync2\r\n" in encoded  # Capability
 
+    def test_psync_encoding(self):
+        """Verify PSYNC ? -1 uses correct RESP encoding."""
+        # Encode the command
+        encoded = RESPEncoder.encode(["PSYNC", "?", "-1"])
+        
+        # Verify exact RESP format
+        assert encoded == b"*3\r\n$5\r\nPSYNC\r\n$1\r\n?\r\n$2\r\n-1\r\n"
+        
+        # Break down the format
+        assert encoded.startswith(b"*3\r\n")  # Array with 3 elements
+        assert b"$5\r\nPSYNC\r\n" in encoded  # Command name
+        assert b"$1\r\n?\r\n" in encoded  # Replication ID (unknown)
+        assert b"$2\r\n-1\r\n" in encoded  # Offset (-1 for full sync)
+
 
