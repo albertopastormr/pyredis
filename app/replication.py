@@ -47,7 +47,7 @@ class ReplicationClient:
         """
         Send PING command to master as first step of handshake.
 
-        The PING command is sent as a RESP array
+        The PING command is sent as a RESP array and expects a +PONG response.
         """
         if not self.writer:
             raise RuntimeError("Not connected to master")
@@ -57,7 +57,14 @@ class ReplicationClient:
         logger.info("Sending PING to master...")
         self.writer.write(ping_command)
         await self.writer.drain()
-        logger.info("✅ PING sent to master")
+        
+        # Read and parse response (expecting +PONG\r\n)
+        response_data = await self.reader.read(1024)
+        response = RESPParser.parse(response_data)
+        if response != "PONG":
+            raise RuntimeError(f"Unexpected response to PING: {response}")
+        
+        logger.info("✅ PING acknowledged with PONG")
 
     async def send_replconf_listening_port(self, port: int) -> None:
         """
@@ -77,7 +84,6 @@ class ReplicationClient:
         self.writer.write(replconf_command)
         await self.writer.drain()
         
-        # Read and parse response (expecting +OK\r\n)
         response_data = await self.reader.read(1024)
         response = RESPParser.parse(response_data)
         if response != "OK":
@@ -100,7 +106,6 @@ class ReplicationClient:
         self.writer.write(replconf_command)
         await self.writer.drain()
         
-        # Read and parse response (expecting +OK\r\n)
         response_data = await self.reader.read(1024)
         response = RESPParser.parse(response_data)
         if response != "OK":

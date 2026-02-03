@@ -54,9 +54,10 @@ class TestReplicationClient:
 
     @patch("asyncio.open_connection")
     def test_send_ping_success(self, mock_open_connection, replication_client):
-        """send_ping correctly sends PING command in RESP format."""
+        """send_ping correctly sends PING command and reads PONG response."""
         # Mock the connection
         mock_reader = AsyncMock()
+        mock_reader.read = AsyncMock(return_value=b"+PONG\r\n")
         mock_writer = MagicMock()
         mock_writer.drain = AsyncMock()
         mock_open_connection.return_value = (mock_reader, mock_writer)
@@ -71,6 +72,9 @@ class TestReplicationClient:
         # Verify RESP format: *1\r\n$4\r\nPING\r\n
         assert written_data == b"*1\r\n$4\r\nPING\r\n"
         mock_writer.drain.assert_called_once()
+        
+        # Verify response was read
+        mock_reader.read.assert_called_once()
 
     @patch("asyncio.open_connection")
     def test_send_replconf_listening_port(self, mock_open_connection, replication_client):
@@ -143,8 +147,8 @@ class TestReplicationClient:
     def test_start_handshake(self, mock_get_port, mock_open_connection, replication_client):
         """start_handshake performs full handshake: PING + REPLCONF × 2."""
         mock_reader = AsyncMock()
-        # Mock responses for REPLCONF commands
-        mock_reader.read = AsyncMock(side_effect=[b"+OK\r\n", b"+OK\r\n"])
+        # Mock responses: PONG for PING, then OK for each REPLCONF
+        mock_reader.read = AsyncMock(side_effect=[b"+PONG\r\n", b"+OK\r\n", b"+OK\r\n"])
         mock_writer = MagicMock()
         mock_writer.drain = AsyncMock()
         mock_open_connection.return_value = (mock_reader, mock_writer)
@@ -171,6 +175,9 @@ class TestReplicationClient:
         replconf_capa_data = mock_writer.write.call_args_list[2][0][0]
         assert b"REPLCONF" in replconf_capa_data
         assert b"psync2" in replconf_capa_data
+        
+        # Verify all responses were read (PONG + OK + OK)
+        assert mock_reader.read.call_count == 3
 
 
 class TestConnectToMaster:
