@@ -36,4 +36,5 @@ class PsyncCommand(BaseCommand):
         repl_id = repl_config.master_replid
         offset = repl_config.master_repl_offset
         
-        return f"FULLRESYNC {repl_id} {offset}"
+        # Return as simple string (encoded as +FULLRESYNC ...\r\n)
+        return {"ok": f"FULLRESYNC {repl_id} {offset}"}

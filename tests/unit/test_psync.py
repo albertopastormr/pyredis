@@ -33,7 +33,7 @@ class TestPsyncCommand:
         
         result = asyncio.run(psync_cmd.execute(["?", "-1"]))
         
-        assert result == "FULLRESYNC 8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb 0"
+        assert result == {"ok": "FULLRESYNC 8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb 0"}
 
     @patch("app.commands.psync.ServerConfig.get_replication_config")
     def test_psync_uses_replication_id(self, mock_get_config, psync_cmd):
@@ -47,7 +47,7 @@ class TestPsyncCommand:
         
         result = asyncio.run(psync_cmd.execute(["?", "-1"]))
         
-        assert "FULLRESYNC abc123def456 100" == result
+        assert result == {"ok": "FULLRESYNC abc123def456 100"}
 
     def test_psync_requires_two_args(self, psync_cmd):
         """PSYNC requires exactly 2 arguments."""
@@ -74,4 +74,4 @@ class TestPsyncCommand:
         
         result = asyncio.run(psync_cmd.execute(["some-repl-id", "123"]))
         
-        assert result == "FULLRESYNC test123 0"
+        assert result == {"ok": "FULLRESYNC test123 0"}
