@@ -7,6 +7,7 @@ import pytest
 
 from app.commands.psync import PsyncCommand
 from app.config import ReplicationConfig, Role
+from app.rdb import EMPTY_RDB
 
 
 @pytest.fixture
@@ -33,7 +34,11 @@ class TestPsyncCommand:
         
         result = asyncio.run(psync_cmd.execute(["?", "-1"]))
         
-        assert result == {"ok": "FULLRESYNC 8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb 0"}
+        # Should return fullresync dict with RDB data
+        assert "fullresync" in result
+        assert result["fullresync"]["replid"] == "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
+        assert result["fullresync"]["offset"] == 0
+        assert result["fullresync"]["rdb"] == EMPTY_RDB
 
     @patch("app.commands.psync.ServerConfig.get_replication_config")
     def test_psync_uses_replication_id(self, mock_get_config, psync_cmd):
@@ -47,7 +52,10 @@ class TestPsyncCommand:
         
         result = asyncio.run(psync_cmd.execute(["?", "-1"]))
         
-        assert result == {"ok": "FULLRESYNC abc123def456 100"}
+        # Check fullresync response structure
+        assert "fullresync" in result
+        assert result["fullresync"]["replid"] == "abc123def456"
+        assert result["fullresync"]["offset"] == 100
 
     def test_psync_requires_two_args(self, psync_cmd):
         """PSYNC requires exactly 2 arguments."""
@@ -74,4 +82,9 @@ class TestPsyncCommand:
         
         result = asyncio.run(psync_cmd.execute(["some-repl-id", "123"]))
         
-        assert result == {"ok": "FULLRESYNC test123 0"}
+        
+        # Always returns FULLRESYNC for now
+        assert "fullresync" in result
+        assert result["fullresync"]["replid"] == "test123"
+        assert result["fullresync"]["offset"] == 0
+        assert result["fullresync"]["rdb"] == EMPTY_RDB

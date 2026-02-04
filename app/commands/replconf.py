@@ -12,8 +12,6 @@ class ReplconfCommand(BaseCommand):
     Used during replica-to-master handshake to:
     - Inform master of replica's listening port
     - Inform master of replica's capabilities
-    
-    For now, we accept any REPLCONF subcommand and return OK.
     """
 
     @property
@@ -34,6 +32,4 @@ class ReplconfCommand(BaseCommand):
         """
         self.validate_args(args, min_args=1)
         
-        # For now, accept any REPLCONF subcommand and return OK
-        # Future: Store listening-port, track capabilities
         return {"ok": "OK"}

@@ -3,6 +3,7 @@
 from typing import Any
 
 from app.config import ServerConfig
+from app.rdb import EMPTY_RDB
 
 from .base import BaseCommand
 
@@ -12,7 +13,7 @@ class PsyncCommand(BaseCommand):
     PSYNC command - Synchronization command for replication.
     
     Used by replica to request synchronization from master.
-    Master responds with FULLRESYNC for initial sync.
+    Master responds with FULLRESYNC for initial sync, followed by RDB file.
     """
 
     @property
@@ -28,7 +29,7 @@ class PsyncCommand(BaseCommand):
                   - For initial sync: ["?", "-1"]
 
         Returns:
-            FULLRESYNC response with master's replication ID and offset
+            Special response dict with FULLRESYNC message and RDB file
         """
         self.validate_args(args, min_args=2, max_args=2)
         
@@ -36,5 +37,12 @@ class PsyncCommand(BaseCommand):
         repl_id = repl_config.master_replid
         offset = repl_config.master_repl_offset
         
-        # Return as simple string (encoded as +FULLRESYNC ...\r\n)
-        return {"ok": f"FULLRESYNC {repl_id} {offset}"}
+        # Return special response with RDB file
+        # Handler will encode as: +FULLRESYNC ...\r\n followed by $<len>\r\n<rdb_data>
+        return {
+            "fullresync": {
+                "replid": repl_id,
+                "offset": offset,
+                "rdb": EMPTY_RDB
+            }
+        }

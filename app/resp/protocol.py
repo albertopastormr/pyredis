@@ -188,6 +188,22 @@ class RESPEncoder:
             # Null array marker (for BLPOP timeout)
             if "null_array" in data:
                 return b"*-1\r\n"
+            
+            # FULLRESYNC response with RDB file (for PSYNC)
+            if "fullresync" in data:
+                fullresync_data = data["fullresync"]
+                replid = fullresync_data["replid"]
+                offset = fullresync_data["offset"]
+                rdb_bytes = fullresync_data["rdb"]
+                
+                response = f"+FULLRESYNC {replid} {offset}\r\n".encode()
+                
+                # Followed by RDB file: $<length>\r\n<binary_data>
+                # Note: NO trailing \r\n after binary data
+                response += f"${len(rdb_bytes)}\r\n".encode()
+                response += rdb_bytes
+                
+                return response
 
         raise ValueError(f"Unsupported type for RESP encoding: {type(data)}")
 
