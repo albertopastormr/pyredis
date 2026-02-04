@@ -20,6 +20,7 @@ from .lpush import LpushCommand
 from .lrange import LrangeCommand
 from .multi import MultiCommand
 from .ping import PingCommand
+from .psync import PsyncCommand
 from .replconf import ReplconfCommand
 from .rpush import RpushCommand
 from .set import SetCommand
@@ -79,6 +80,7 @@ class CommandRegistry:
 
 # Auto-register all commands
 CommandRegistry.register(PingCommand)
+CommandRegistry.register(PsyncCommand)
 CommandRegistry.register(ReplconfCommand)
 CommandRegistry.register(EchoCommand)
 CommandRegistry.register(SetCommand)
@@ -105,6 +107,7 @@ __all__ = [
     "CommandRegistry",
     "BaseCommand",
     "PingCommand",
+    "PsyncCommand",
     "ReplconfCommand",
     "EchoCommand",
     "SetCommand",
