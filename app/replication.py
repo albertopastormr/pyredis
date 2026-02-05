@@ -193,6 +193,8 @@ class ReplicationClient:
         
         logger.info("📡 Ready to receive propagated commands from master")
         
+        buffer = b""  # Buffer for incomplete commands
+        
         while True:
             try:
                 # Read data from master (may contain multiple commands)
@@ -202,14 +204,26 @@ class ReplicationClient:
                     logger.warning("Master connection closed")
                     break
                 
-                try:
-                    command = RESPParser.parse(data)
-                    logger.info(f"Received propagated command: {command}")
-                    
-                    await execute_command(command, from_replication=True)
-                    
-                except Exception as e:
-                    logger.error(f"Error processing command: {e}")
+                # Add to buffer
+                buffer += data
+                
+                # Parse all complete commands from buffer
+                offset = 0
+                while offset < len(buffer):
+                    try:
+                        command, new_offset = RESPParser._parse_value(buffer, offset)
+                        logger.info(f"Received propagated command: {command}")
+                        
+                        # Execute command
+                        await execute_command(command, from_replication=True)
+                        
+                        offset = new_offset
+                    except ValueError:
+                        # Incomplete command, break and wait for more data
+                        break
+                
+                # Remove processed data from buffer
+                buffer = buffer[offset:]
                     
             except Exception as e:
                 logger.error(f"Error reading from master: {e}")
