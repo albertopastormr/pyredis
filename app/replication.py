@@ -148,6 +148,71 @@ class ReplicationClient:
             logger.info(f"✅ PSYNC acknowledged: FULLRESYNC {master_repl_id} {master_offset}")
         else:
             logger.info(f"✅ PSYNC acknowledged: {response}")
+    
+    async def receive_rdb_file(self) -> None:
+        """
+        Receive the RDB file from master after PSYNC.
+        
+        Master sends: $<length>\r\n<binary_data>
+        For empty RDB, it's $88\r\n followed by 88 bytes
+        """
+        if not self.reader:
+            raise RuntimeError("Not connected to master")
+        
+        logger.info("Waiting for RDB file from master...")
+        
+        # Read the bulk string header: $<length>\r\n
+        header_data = await self.reader.readuntil(b'\r\n')
+        header = header_data.decode('utf-8').strip()
+        
+        if not header.startswith('$'):
+            raise RuntimeError(f"Expected RDB bulk string, got: {header}")
+        
+        rdb_length = int(header[1:])
+        logger.info(f"Receiving RDB file ({rdb_length} bytes)...")
+        
+        # Read the exact number of bytes for RDB file
+        rdb_data = await self.reader.readexactly(rdb_length)
+        logger.info(f"✅ Received RDB file ({len(rdb_data)} bytes)")
+    
+    async def process_commands(self) -> None:
+        """
+        Process propagated commands from master.
+        
+        After handshake and RDB file, master sends write commands
+        that need to be executed without sending responses.
+        """
+        if not self.reader:
+            raise RuntimeError("Not connected to master")
+        
+        # to avoid circular dependency
+        from .handler import execute_command
+        
+        logger.info("📡 Ready to receive propagated commands from master")
+        
+        while True:
+            try:
+                # Read data from master (may contain multiple commands)
+                data = await self.reader.read(4096)
+                
+                if not data:
+                    logger.warning("Master connection closed")
+                    break
+                
+                # Parse and execute command
+                try:
+                    command = RESPParser.parse(data)
+                    logger.info(f"Received propagated command: {command}")
+                    
+                    # Execute without sending response (from_replication=True)
+                    await execute_command(command, from_replication=True)
+                    
+                except Exception as e:
+                    logger.error(f"Error processing command: {e}")
+                    
+            except Exception as e:
+                logger.error(f"Error reading from master: {e}")
+                break
 
 
     async def start_handshake(self) -> None:
@@ -200,6 +265,11 @@ async def connect_to_master() -> None:
 
     try:
         await client.start_handshake()
+        
+        await client.receive_rdb_file()
+        
+        await client.process_commands()
+        
     except Exception as e:
-        logger.error(f"Handshake failed: {e}")
+        logger.error(f"Replication failed: {e}")
         # Don't crash the server, just log the error

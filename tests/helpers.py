@@ -5,7 +5,7 @@ import asyncio
 from app.handler import execute_command as async_execute_command
 
 
-def execute_command(args):
+def execute_command(args, from_replication=False):
     """
     Synchronous wrapper for execute_command.
 
@@ -13,6 +13,7 @@ def execute_command(args):
 
     Args:
         args: Command and arguments as list
+        from_replication: Whether command is from replication
 
     Returns:
         Command execution result
@@ -23,4 +24,4 @@ def execute_command(args):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-    return loop.run_until_complete(async_execute_command(args))
+    return loop.run_until_complete(async_execute_command(args, from_replication=from_replication))

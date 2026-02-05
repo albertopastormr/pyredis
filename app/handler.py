@@ -60,7 +60,12 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
         await writer.wait_closed()
 
 
-async def execute_command(args: list[str], connection_id: Any = None, writer: asyncio.StreamWriter = None) -> Any:
+async def execute_command(
+    args: list[str], 
+    connection_id: Any = None, 
+    writer: asyncio.StreamWriter = None,
+    from_replication: bool = False
+) -> Any:
     """
     Execute a command asynchronously.
 
@@ -71,6 +76,7 @@ async def execute_command(args: list[str], connection_id: Any = None, writer: as
         args: Command and arguments as list of strings (command name included)
         connection_id: Connection identifier for transaction tracking
         writer: Optional stream writer for replica registration
+        from_replication: True if command is propagated from master (suppresses response)
 
     Returns:
         Result from command execution, or {"queued": "QUEUED"} if command was queued
@@ -107,7 +113,10 @@ async def execute_command(args: list[str], connection_id: Any = None, writer: as
             ReplicaManager.add_replica(connection_id, writer)
             print(f"[Handler] Registered replica {connection_id}")
     
-    if ServerConfig.get_replication_config().role.value == "master" and command_obj.is_write_command:
-        await ReplicaManager.propagate_command(command_name, command_args)
+    
+    # Propagate write commands to replicas (only if master and not already from replication)
+    if not from_replication:
+        if ServerConfig.get_replication_config().role.value == "master" and command_obj.is_write_command:
+            await ReplicaManager.propagate_command(command_name, command_args)
     
     return result
