@@ -55,6 +55,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
     finally:
         print(f"[{addr}] Closing connection")
         remove_transaction_context(connection_id=addr)
+        ReplicaManager.remove_replica(addr)  # Clean up replica if it was registered
         writer.close()
         await writer.wait_closed()
 
