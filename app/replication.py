@@ -59,9 +59,10 @@ class ReplicationClient:
         await self.writer.drain()
         
         # Read and parse response (expecting +PONG\r\n)
-        response_data = await self.reader.read(1024)
-        response = RESPParser.parse(response_data)
-        if response != "PONG":
+        response_line = await self.reader.readuntil(b'\r\n')
+        response = response_line.decode('utf-8').strip()
+        
+        if response != "+PONG":
             raise RuntimeError(f"Unexpected response to PING: {response}")
         
         logger.info("✅ PING acknowledged with PONG")
@@ -84,9 +85,9 @@ class ReplicationClient:
         self.writer.write(replconf_command)
         await self.writer.drain()
         
-        response_data = await self.reader.read(1024)
-        response = RESPParser.parse(response_data)
-        if response != "OK":
+        response_line = await self.reader.readuntil(b'\r\n')
+        response = response_line.decode('utf-8').strip()
+        if response != "+OK":
             raise RuntimeError(f"Unexpected response to REPLCONF listening-port: {response}")
         
         logger.info("✅ REPLCONF listening-port acknowledged")
@@ -106,9 +107,9 @@ class ReplicationClient:
         self.writer.write(replconf_command)
         await self.writer.drain()
         
-        response_data = await self.reader.read(1024)
-        response = RESPParser.parse(response_data)
-        if response != "OK":
+        response_line = await self.reader.readuntil(b'\r\n')
+        response = response_line.decode('utf-8').strip()
+        if response != "+OK":
             raise RuntimeError(f"Unexpected response to REPLCONF capa: {response}")
         
         logger.info("✅ REPLCONF capa acknowledged")
@@ -135,13 +136,15 @@ class ReplicationClient:
         self.writer.write(psync_command)
         await self.writer.drain()
         
-        response_data = await self.reader.read(1024)
-        response = RESPParser.parse(response_data)
+        # Read only the FULLRESYNC line (not bulk read that might consume RDB)
+        response_line = await self.reader.readuntil(b'\r\n')
+        response = response_line.decode('utf-8').strip()
         
-        if not isinstance(response, str) or not response.startswith("FULLRESYNC"):
+        if not response.startswith("+FULLRESYNC"):
             raise RuntimeError(f"Unexpected response to PSYNC: {response}")
         
-        parts = response.split()
+        # Parse: +FULLRESYNC <repl_id> <offset>
+        parts = response[1:].split()  # Skip the '+'
         if len(parts) == 3:
             master_repl_id = parts[1]
             master_offset = parts[2]
@@ -199,12 +202,10 @@ class ReplicationClient:
                     logger.warning("Master connection closed")
                     break
                 
-                # Parse and execute command
                 try:
                     command = RESPParser.parse(data)
                     logger.info(f"Received propagated command: {command}")
                     
-                    # Execute without sending response (from_replication=True)
                     await execute_command(command, from_replication=True)
                     
                 except Exception as e:
