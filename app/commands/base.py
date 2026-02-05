@@ -26,6 +26,16 @@ class BaseCommand(ABC):
             False if command should be queued when in a transaction.
         """
         return False
+    
+    @property
+    def is_write_command(self) -> bool:
+        """
+        Indicates if this command modifies data and should be propagated to replicas.
+        
+        Write commands (SET, DEL, RPUSH, etc.) should return True.
+        Read commands (GET, PING, ECHO, etc.) should return False.
+        """
+        return False
 
     @abstractmethod
     async def execute(self, args: list[str], connection_id: Any = None) -> Any:

@@ -21,6 +21,11 @@ class IncrCommand(BaseCommand):
     @property
     def name(self) -> str:
         return "INCR"
+    
+    @property
+    def is_write_command(self) -> bool:
+        """INCR modifies data and must be propagated to replicas."""
+        return True
 
     async def execute(self, args: list[str], connection_id: Any = None) -> Any:
         """
