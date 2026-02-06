@@ -139,50 +139,41 @@ class RESPEncoder:
         """
         if data is None:
             # Null bulk string (for GET, etc.)
-            return b"$-1\r\n"
+            return RESPEncoder._encode_bulk_string(None)
 
         if isinstance(data, bool):
-            # Boolean as simple string (true/false)
-            return f"${'true' if data else 'false'}\r\n".encode()
+            # Boolean as bulk string (true/false)
+            return RESPEncoder._encode_bulk_string('true' if data else 'false')
 
         if isinstance(data, int):
-            # Integer
-            return f":{data}\r\n".encode()
+            return RESPEncoder._encode_integer(data)
 
         if isinstance(data, str):
-            # Bulk string
-            return f"${len(data)}\r\n{data}\r\n".encode()
+            return RESPEncoder._encode_bulk_string(data)
 
         if isinstance(data, bytes):
-            # Bulk string (bytes)
+            # Bulk string (bytes) - special handling needed
             return b"$%d\r\n%b\r\n" % (len(data), data)
 
         if isinstance(data, list):
-            # Array
-            if len(data) == 0:
-                return b"*0\r\n"
-
-            encoded = f"*{len(data)}\r\n".encode()
-            for item in data:
-                encoded += RESPEncoder.encode(item)
-            return encoded
+            return RESPEncoder._encode_array(data)
 
         if isinstance(data, dict):
             # Special handling for responses
             if "ok" in data:
                 value = data["ok"]
                 if isinstance(value, str):
-                    return f"+{value}\r\n".encode()
+                    return RESPEncoder._encode_simple_string(value)
                 return RESPEncoder.encode(value)
 
             if "error" in data:
-                return f"-{data['error']}\r\n".encode()
+                return RESPEncoder._encode_error(data["error"])
 
             # Queued command response (MULTI transaction)
             if "queued" in data:
                 value = data["queued"]
                 if isinstance(value, str):
-                    return f"+{value}\r\n".encode()
+                    return RESPEncoder._encode_simple_string(value)
                 return RESPEncoder.encode(value)
 
             # Null array marker (for BLPOP timeout)
@@ -196,7 +187,7 @@ class RESPEncoder:
                 offset = fullresync_data["offset"]
                 rdb_bytes = fullresync_data["rdb"]
                 
-                response = f"+FULLRESYNC {replid} {offset}\r\n".encode()
+                response = RESPEncoder._encode_simple_string(f"FULLRESYNC {replid} {offset}")
                 
                 # Followed by RDB file: $<length>\r\n<binary_data>
                 # Note: NO trailing \r\n after binary data
@@ -210,6 +201,7 @@ class RESPEncoder:
     @staticmethod
     def _encode_simple_string(s: str) -> bytes:
         """Encode as RESP simple string: +<string>\r\n"""
+        return f"+{s}\r\n".encode()
 
     @staticmethod
     def _encode_bulk_string(s: str) -> bytes:

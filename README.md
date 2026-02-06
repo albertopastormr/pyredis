@@ -36,7 +36,7 @@ uv sync --extra dev
 ### Running the Server
 
 ```bash
-./your_program.sh
+./run-redis.sh
 ```
 
 The server will start on `localhost:6379`.
@@ -66,7 +66,7 @@ Use the built-in interactive client to test your server:
 
 ```bash
 # Terminal 1: Start server
-./your_program.sh
+./run-redis.sh
 
 # Terminal 2: Connect with client
 python3 redis_client.py

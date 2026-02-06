@@ -25,6 +25,7 @@ from .replconf import ReplconfCommand
 from .rpush import RpushCommand
 from .set import SetCommand
 from .type import TypeCommand
+from .wait import WaitCommand
 from .xadd import XaddCommand
 from .xinfo import XinfoCommand
 from .xrange import XrangeCommand
@@ -97,6 +98,7 @@ CommandRegistry.register(LlenCommand)
 CommandRegistry.register(LpopCommand)
 CommandRegistry.register(BlpopCommand)
 CommandRegistry.register(TypeCommand)
+CommandRegistry.register(WaitCommand)
 CommandRegistry.register(XaddCommand)
 CommandRegistry.register(XrangeCommand)
 CommandRegistry.register(XreadCommand)
@@ -124,6 +126,7 @@ __all__ = [
     "LpopCommand",
     "BlpopCommand",
     "TypeCommand",
+    "WaitCommand",
     "XaddCommand",
     "XrangeCommand",
     "XreadCommand",
