@@ -8,7 +8,6 @@ from .config import Role, ServerConfig
 from .replication import connect_to_master
 from .server import start_server
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -53,7 +52,8 @@ async def main() -> None:
             # Start handshake with master in background
             asyncio.create_task(connect_to_master())
         except ValueError as e:
-            print(f"Error: {e}")
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error: {e}")
             return
     else:
         # Default to master role

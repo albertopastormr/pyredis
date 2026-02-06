@@ -1,7 +1,10 @@
 """Replica connection management and command propagation."""
 
 import asyncio
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from .resp import RESPEncoder, RESPParser
 
@@ -38,7 +41,7 @@ class ReplicaManager:
         """
         cls._replicas[connection_id] = (reader, writer)
         cls._replica_offsets[connection_id] = 0
-        print(f"[ReplicaManager] Added replica: {connection_id}. Total replicas: {len(cls._replicas)}")
+        logger.info(f"[ReplicaManager] Added replica: {connection_id}. Total replicas: {len(cls._replicas)}")
 
     @classmethod
     def remove_replica(cls, connection_id: Any) -> None:
@@ -52,7 +55,7 @@ class ReplicaManager:
             del cls._replicas[connection_id]
         if connection_id in cls._replica_offsets:
             del cls._replica_offsets[connection_id]
-            print(f"[ReplicaManager] Removed replica: {connection_id}. Total replicas: {len(cls._replicas)}")
+            logger.info(f"[ReplicaManager] Removed replica: {connection_id}. Total replicas: {len(cls._replicas)}")
 
     @classmethod
     async def propagate_command(cls, command_name: str, args: list[str]) -> None:
@@ -72,7 +75,7 @@ class ReplicaManager:
         command_array = [command_name.upper(), *args]
         encoded = RESPEncoder.encode(command_array)
 
-        print(f"[ReplicaManager] Propagating {command_name} to {len(cls._replicas)} replica(s)")
+        logger.info(f"[ReplicaManager] Propagating {command_name} to {len(cls._replicas)} replica(s)")
 
         # Send to all replicas without waiting for response
         for connection_id, (reader, writer) in cls._replicas.items():
@@ -80,11 +83,11 @@ class ReplicaManager:
                 writer.write(encoded)
                 await writer.drain()
             except Exception as e:
-                print(f"[ReplicaManager] Error propagating to {connection_id}: {e}")
+                logger.error(f"[ReplicaManager] Error propagating to {connection_id}: {e}")
         
         # Update master offset
         cls._master_offset += len(encoded)
-        print(f"[ReplicaManager] Master offset now: {cls._master_offset}")
+        logger.debug(f"[ReplicaManager] Master offset now: {cls._master_offset}")
 
     @classmethod
     async def update_replica_ack(cls, connection_id: Any, offset: int) -> None:
@@ -97,7 +100,7 @@ class ReplicaManager:
         """
         if connection_id in cls._replicas:
             cls._replica_offsets[connection_id] = offset
-            print(f"[ReplicaManager] Replica {connection_id} acked offset {offset}")
+            logger.debug(f"[ReplicaManager] Replica {connection_id} acked offset {offset}")
             
             condition = cls._get_condition()
             async with condition:
@@ -119,7 +122,7 @@ class ReplicaManager:
             return 0
         
         target_offset = cls._master_offset
-        print(f"[ReplicaManager] Waiting for {numreplicas} replicas to reach offset {target_offset}")
+        logger.debug(f"[ReplicaManager] Waiting for {numreplicas} replicas to reach offset {target_offset}")
         
         if target_offset == 0:
             return len(cls._replicas)
@@ -131,7 +134,7 @@ class ReplicaManager:
                 writer.write(getack_command)
                 await writer.drain()
             except Exception as e:
-                print(f"[ReplicaManager] Error sending GETACK to {connection_id}: {e}")
+                logger.error(f"[ReplicaManager] Error sending GETACK to {connection_id}: {e}")
         
         # Wait for ACKs
         condition = cls._get_condition()
@@ -144,7 +147,7 @@ class ReplicaManager:
         try:
             return await asyncio.wait_for(_wait_condition(), timeout=timeout_ms / 1000.0)
         except asyncio.TimeoutError:
-            print(f"[ReplicaManager] Timeout waiting for ACKs")
+            logger.warning(f"[ReplicaManager] Timeout waiting for ACKs")
             return cls._count_acks(target_offset)
 
     @classmethod

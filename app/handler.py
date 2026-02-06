@@ -1,7 +1,10 @@
 """Client connection handler - RESP protocol layer."""
 
 import asyncio
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from .commands import CommandRegistry
 from .config import ServerConfig
@@ -22,7 +25,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
         writer: Async stream writer for outgoing data
     """
     addr = writer.get_extra_info("peername")
-    print(f"[{addr}] Client connected")
+    logger.info(f"[{addr}] Client connected")
 
     try:
         while True:
@@ -30,11 +33,12 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             if not data:
                 break
 
-            print(f"[{addr}] Received {len(data)} bytes")
+
+            logger.debug(f"[{addr}] Received {len(data)} bytes")
 
             try:
                 command = RESPParser.parse(data)
-                print(f"[{addr}] Parsed command: {command}")
+                logger.debug(f"[{addr}] Parsed command: {command}")
 
                 response = await execute_command(command, connection_id=addr, reader=reader, writer=writer)
 
@@ -43,17 +47,17 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 await writer.drain()
 
             except ValueError as e:
-                print(f"[{addr}] Error: {e}")
+                logger.error(f"[{addr}] Error: {e}")
                 error_resp = RESPEncoder.encode({"error": str(e)})
                 writer.write(error_resp)
                 await writer.drain()
 
     except asyncio.CancelledError:
-        print(f"[{addr}] Connection cancelled")
+        logger.info(f"[{addr}] Connection cancelled")
     except Exception as e:
-        print(f"[{addr}] Unexpected error: {e}")
+        logger.error(f"[{addr}] Unexpected error: {e}")
     finally:
-        print(f"[{addr}] Closing connection")
+        logger.info(f"[{addr}] Closing connection")
         remove_transaction_context(connection_id=addr)
         ReplicaManager.remove_replica(addr)  # Clean up replica if it was registered
         writer.close()
@@ -113,7 +117,7 @@ async def execute_command(
     if command_name.upper() == "PSYNC" and reader is not None and writer is not None:
         if isinstance(result, dict) and "fullresync" in result:
             ReplicaManager.add_replica(connection_id, reader, writer)
-            print(f"[Handler] Registered replica {connection_id}")
+            logger.info(f"[Handler] Registered replica {connection_id}")
     
     
     # Propagate write commands to replicas (only if master and not already from replication)

@@ -1,6 +1,7 @@
 """Redis server - connection management and server lifecycle."""
 
 import asyncio
+import logging
 from collections.abc import Awaitable
 from typing import Callable
 
@@ -29,9 +30,11 @@ async def start_server(
     server = await asyncio.start_server(handler, host, port)
 
     addr = server.sockets[0].getsockname()
-    print(f"🚀 Redis server started on {addr}")
-    print("📡 Ready to accept connections...")
-    print("⏹️  Press Ctrl+C to stop")
+    
+    logger = logging.getLogger(__name__)
+    logger.info(f"🚀 Redis server started on {addr}")
+    logger.info("📡 Ready to accept connections...")
+    logger.info("⏹️  Press Ctrl+C to stop")
 
     async with server:
         await server.serve_forever()
