@@ -38,7 +38,6 @@ class PsyncCommand(BaseCommand):
         offset = repl_config.master_repl_offset
         
         # Return special response with RDB file
-        # Handler will encode as: +FULLRESYNC ...\r\n followed by $<len>\r\n<rdb_data>
         return {
             "fullresync": {
                 "replid": repl_id,

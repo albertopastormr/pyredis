@@ -26,11 +26,12 @@ class TestFromReplicationFlag:
     def test_from_replication_false_propagates_command(self):
         """Test that commands with from_replication=False are propagated."""
         # Add a mock replica
+        mock_reader = MagicMock()
         mock_writer = MagicMock()
         mock_writer.write = MagicMock()
         mock_writer.drain = AsyncMock()
         
-        ReplicaManager.add_replica("test_replica", mock_writer)
+        ReplicaManager.add_replica("test_replica", mock_reader, mock_writer)
         
         # Execute a write command with from_replication=False
         result = asyncio.run(
@@ -44,11 +45,12 @@ class TestFromReplicationFlag:
     def test_from_replication_true_skips_propagation(self):
         """Test that commands with from_replication=True are NOT propagated."""
         # Add a mock replica
+        mock_reader = MagicMock()
         mock_writer = MagicMock()
         mock_writer.write = MagicMock()
         mock_writer.drain = AsyncMock()
         
-        ReplicaManager.add_replica("test_replica", mock_writer)
+        ReplicaManager.add_replica("test_replica", mock_reader, mock_writer)
         
         # Execute a write command with from_replication=True
         result = asyncio.run(
@@ -95,9 +97,10 @@ class TestFromReplicationFlag:
             listening_port=6379
         )
         
+        mock_reader = MagicMock()
         mock_writer = MagicMock()
         mock_writer.write = MagicMock()
-        ReplicaManager.add_replica("test", mock_writer)
+        ReplicaManager.add_replica("test", mock_reader, mock_writer)
         
         # Execute write command as replica
         asyncio.run(execute_command(["SET", "key", "value"], from_replication=False))
@@ -119,11 +122,12 @@ class TestReplicaManager:
 
     def test_propagate_command_encoding(self):
         """Test that propagate_command encodes correctly."""
+        mock_reader = MagicMock()
         mock_writer = MagicMock()
         mock_writer.write = MagicMock()
         mock_writer.drain = AsyncMock()
         
-        ReplicaManager.add_replica("replica1", mock_writer)
+        ReplicaManager.add_replica("replica1", mock_reader, mock_writer)
         
         # Propagate a command
         asyncio.run(ReplicaManager.propagate_command("SET", ["foo", "bar"]))

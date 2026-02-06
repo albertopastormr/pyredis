@@ -36,7 +36,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 command = RESPParser.parse(data)
                 print(f"[{addr}] Parsed command: {command}")
 
-                response = await execute_command(command, connection_id=addr, writer=writer)
+                response = await execute_command(command, connection_id=addr, reader=reader, writer=writer)
 
                 response_bytes = RESPEncoder.encode(response)
                 writer.write(response_bytes)
@@ -63,6 +63,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 async def execute_command(
     args: list[str], 
     connection_id: Any = None, 
+    reader: asyncio.StreamReader = None,
     writer: asyncio.StreamWriter = None,
     from_replication: bool = False
 ) -> Any:
@@ -75,6 +76,7 @@ async def execute_command(
     Args:
         args: Command and arguments as list of strings (command name included)
         connection_id: Connection identifier for transaction tracking
+        reader: Optional stream reader for replica registration
         writer: Optional stream writer for replica registration
         from_replication: True if command is propagated from master (suppresses response)
 
@@ -108,9 +110,9 @@ async def execute_command(
     result = await command_obj.execute(command_args, connection_id=connection_id)
     
     # if replica is connecting, register it
-    if command_name.upper() == "PSYNC" and writer is not None:
+    if command_name.upper() == "PSYNC" and reader is not None and writer is not None:
         if isinstance(result, dict) and "fullresync" in result:
-            ReplicaManager.add_replica(connection_id, writer)
+            ReplicaManager.add_replica(connection_id, reader, writer)
             print(f"[Handler] Registered replica {connection_id}")
     
     

@@ -6,6 +6,21 @@ from app.commands.wait import WaitCommand
 from app.replica_manager import ReplicaManager
 
 
+class MockReader:
+    """Mock stream reader for testing."""
+    
+    def __init__(self):
+        self.data_queue = asyncio.Queue()
+    
+    async def read(self, n: int) -> bytes:
+        """Read data from queue."""
+        return await self.data_queue.get()
+    
+    def feed_data(self, data: bytes):
+        """Feed data to be read."""
+        self.data_queue.put_nowait(data)
+
+
 class MockWriter:
     """Mock stream writer for testing."""
     
@@ -38,13 +53,13 @@ class TestWaitWithReplicas:
         ReplicaManager.reset()
         
         # Simulate 3 connected replicas
-        ReplicaManager.add_replica("replica1", MockWriter())
-        ReplicaManager.add_replica("replica2", MockWriter())
-        ReplicaManager.add_replica("replica3", MockWriter())
+        ReplicaManager.add_replica("replica1", MockReader(), MockWriter())
+        ReplicaManager.add_replica("replica2", MockReader(), MockWriter())
+        ReplicaManager.add_replica("replica3", MockReader(), MockWriter())
         
         cmd = WaitCommand()
         
-        # Asking for 2, returns 3 (all connected)
+        # When offset is 0, returns all connected replicas
         result = asyncio.run(cmd.execute(["2", "1000"]))
         assert result == 3
         
@@ -65,11 +80,11 @@ class TestWaitWithReplicas:
         ReplicaManager.reset()
         
         for i in range(7):
-            ReplicaManager.add_replica(f"replica{i}", MockWriter())
+            ReplicaManager.add_replica(f"replica{i}", MockReader(), MockWriter())
         
         cmd = WaitCommand()
         
-        # All scenarios from the example should return 7
+        # All scenarios from the example should return 7 (when offset is 0)
         result = asyncio.run(cmd.execute(["3", "500"]))
         assert result == 7
         
@@ -83,16 +98,16 @@ class TestWaitWithReplicas:
         ReplicaManager.reset()
 
     def test_wait_ignores_numreplicas_argument(self):
-        """WAIT ignores numreplicas and just returns connected count."""
+        """WAIT ignores numreplicas and just returns connected count (when offset is 0)."""
         ReplicaManager.reset()
         
         # Add 5 replicas
         for i in range(5):
-            ReplicaManager.add_replica(f"replica{i}", MockWriter())
+            ReplicaManager.add_replica(f"replica{i}", MockReader(), MockWriter())
         
         cmd = WaitCommand()
         
-        # Different numreplicas values all return 5
+        # Different numreplicas values all return 5 (when offset is 0)
         assert asyncio.run(cmd.execute(["1", "1000"])) == 5
         assert asyncio.run(cmd.execute(["10", "1000"])) == 5
         assert asyncio.run(cmd.execute(["0", "1000"])) == 5

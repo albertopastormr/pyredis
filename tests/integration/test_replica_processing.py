@@ -75,10 +75,11 @@ class TestReplicaCommandProcessing:
         from unittest.mock import MagicMock, AsyncMock
         
         # Add a mock replica
+        mock_reader = MagicMock()
         mock_writer = MagicMock()
         mock_writer.write = MagicMock()
         mock_writer.drain = AsyncMock()
-        ReplicaManager.add_replica("replica", mock_writer)
+        ReplicaManager.add_replica("replica", mock_reader, mock_writer)
         
         # Execute command with from_replication=True
         execute_command(["SET", "key", "value"], from_replication=True)
@@ -104,17 +105,19 @@ class TestMasterToReplicaPropagation:
         from unittest.mock import MagicMock, AsyncMock
         
         # Create mock replicas
+        reader1 = MagicMock()
         replica1 = MagicMock()
         replica1.write = MagicMock()
         replica1.drain = AsyncMock()
         
+        reader2 = MagicMock()
         replica2 = MagicMock()
         replica2.write = MagicMock()
         replica2.drain = AsyncMock()
         
         # Register replicas
-        ReplicaManager.add_replica("replica1", replica1)
-        ReplicaManager.add_replica("replica2", replica2)
+        ReplicaManager.add_replica("replica1", reader1, replica1)
+        ReplicaManager.add_replica("replica2", reader2, replica2)
         
         # Execute write command (not from replication)
         execute_command(["SET", "key", "value"], from_replication=False)
@@ -127,10 +130,11 @@ class TestMasterToReplicaPropagation:
         """Test that client commands propagate but replica commands don't."""
         from unittest.mock import MagicMock, AsyncMock
         
+        mock_reader = MagicMock()
         mock_replica = MagicMock()
         mock_replica.write = MagicMock()
         mock_replica.drain = AsyncMock()
-        ReplicaManager.add_replica("replica", mock_replica)
+        ReplicaManager.add_replica("replica", mock_reader, mock_replica)
         
         # Client command (from_replication=False) - should propagate
         execute_command(["SET", "client_key", "value"], from_replication=False)

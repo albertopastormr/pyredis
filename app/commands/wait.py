@@ -31,7 +31,7 @@ class WaitCommand(BaseCommand):
             args: [numreplicas, timeout]
 
         Returns:
-            Dictionary with integer response containing number of replicas acknowledged
+            Integer - Number of replicas that acknowledged
         """
         self.validate_args(args, min_args=2, max_args=2)
         
@@ -47,11 +47,8 @@ class WaitCommand(BaseCommand):
         if timeout < 0:
             raise ValueError("ERR timeout must be non-negative")
         
-        # Get the number of connected replicas
+        # Use ReplicaManager to wait for replication
         from ..replica_manager import ReplicaManager
-        replica_count = ReplicaManager.get_replica_count()
+        acknowledged_count = await ReplicaManager.wait_for_replication(numreplicas, timeout)
         
-        # For this stage, return the number of connected replicas
-        # We assume all replicas are in sync at offset 0
-        # since no write commands have been propagated yet
-        return replica_count
+        return acknowledged_count
