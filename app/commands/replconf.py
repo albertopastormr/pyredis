@@ -32,4 +32,25 @@ class ReplconfCommand(BaseCommand):
         """
         self.validate_args(args, min_args=1)
         
+        subcommand = args[0].upper()
+        
+        # Handle REPLCONF ACK <offset>
+        if subcommand == "ACK":
+            if len(args) < 2:
+                # Should we raise error? Redis just ignores partial commands sometimes.
+                # But let's be strict or lenient? 
+                # For this stage, let's assume valid command.
+                return {"no_response": True}
+                
+            try:
+                offset = int(args[1])
+                if connection_id:
+                    from ..replica_manager import ReplicaManager
+                    await ReplicaManager.update_replica_ack(connection_id, offset)
+            except ValueError:
+                pass
+                
+            # Master does not respond to REPLCONF ACK
+            return {"no_response": True}
+        
         return {"ok": "OK"}

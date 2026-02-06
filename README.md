@@ -19,8 +19,6 @@ A high-performance Redis server implementation in Python 3.9+ featuring async I/
 ## 📖 Documentation
 
 - **[Architecture Guide](docs/ARCHITECTURE.md)** - Deep dive into system design with diagrams
-- **[Release Strategy](docs/RELEASE_STRATEGY.md)** - Launch plan and marketing guide  
-- **[Pub/Sub Implementation](docs/PUBSUB_IMPLEMENTATION.md)** - Guide for adding pub/sub feature
 - **[Contributing](CONTRIBUTING.md)** - How to contribute to the project
 
 ## 🚀 Quick Start
@@ -116,7 +114,7 @@ uv run pytest
 uv run pytest -v
 
 # Run specific test file
-uv run pytest tests/unit/test_resp_parser.py
+uv run pytest tests/unit/test_resp/test_resp_parser.py
 
 # Run integration tests
 uv run pytest tests/integration/

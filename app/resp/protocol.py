@@ -176,6 +176,10 @@ class RESPEncoder:
                     return RESPEncoder._encode_simple_string(value)
                 return RESPEncoder.encode(value)
 
+            # Internal flag to suppress response (e.g. for REPLCONF ACK)
+            if "no_response" in data:
+                return b""
+
             # Null array marker (for BLPOP timeout)
             if "null_array" in data:
                 return b"*-1\r\n"
