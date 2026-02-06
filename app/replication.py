@@ -25,6 +25,25 @@ class ReplicationClient:
         self.master_port = master_port
         self.reader: Optional[asyncio.StreamReader] = None
         self.writer: Optional[asyncio.StreamWriter] = None
+        self.offset: int = 0  # Track bytes of commands processed
+
+    @staticmethod
+    def _is_replconf_getack(command) -> bool:
+        """
+        Check if a command is REPLCONF GETACK.
+        
+        Args:
+            command: Parsed command as a list of strings
+            
+        Returns:
+            True if command is REPLCONF GETACK, False otherwise
+        """
+        return (
+            isinstance(command, list)
+            and len(command) == 3
+            and command[0].upper() == "REPLCONF"
+            and command[1].upper() == "GETACK"
+        )
 
     async def connect(self) -> None:
         """
@@ -184,8 +203,12 @@ class ReplicationClient:
         
         After handshake and RDB file, master sends write commands
         that need to be executed without sending responses.
+        
+        Special handling for REPLCONF GETACK:
+        - Responds with REPLCONF ACK <offset>
+        - All other commands are processed silently
         """
-        if not self.reader:
+        if not self.reader or not self.writer:
             raise RuntimeError("Not connected to master")
         
         # to avoid circular dependency
@@ -204,26 +227,36 @@ class ReplicationClient:
                     logger.warning("Master connection closed")
                     break
                 
-                # Add to buffer
                 buffer += data
                 
                 # Parse all complete commands from buffer
-                offset = 0
-                while offset < len(buffer):
+                buffer_offset = 0
+                while buffer_offset < len(buffer):
                     try:
-                        command, new_offset = RESPParser._parse_value(buffer, offset)
+                        command, new_offset = RESPParser._parse_value(buffer, buffer_offset)
                         logger.info(f"Received propagated command: {command}")
+                        # Calculate bytes of this command
+                        command_bytes = new_offset - buffer_offset
                         
-                        # Execute command
-                        await execute_command(command, from_replication=True)
+                        # Check if this is a REPLCONF GETACK command
+                        is_getack = self._is_replconf_getack(command)
                         
-                        offset = new_offset
+                        if is_getack:
+                            ack_response = RESPEncoder.encode(["REPLCONF", "ACK", str(self.offset)])
+                            self.writer.write(ack_response)
+                            await self.writer.drain()
+                            logger.info(f"Sent REPLCONF ACK {self.offset}")
+                        else:
+                            await execute_command(command, from_replication=True)
+                        
+                        self.offset += command_bytes
+                        
+                        buffer_offset = new_offset
                     except ValueError:
-                        # Incomplete command, break and wait for more data
                         break
                 
                 # Remove processed data from buffer
-                buffer = buffer[offset:]
+                buffer = buffer[buffer_offset:]
                     
             except Exception as e:
                 logger.error(f"Error reading from master: {e}")
