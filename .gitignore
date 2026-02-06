@@ -172,8 +172,3 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-
-# CodeCrafters specific files (not needed for standalone project)
-.codecrafters/
-codecrafters.yml
-codecrafters_redis.egg-info/
