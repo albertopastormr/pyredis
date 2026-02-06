@@ -4,6 +4,7 @@ import asyncio
 import pytest
 
 from app.commands.wait import WaitCommand
+from app.replica_manager import ReplicaManager
 
 
 class TestWaitCommand:
@@ -15,10 +16,13 @@ class TestWaitCommand:
         assert cmd.name == "WAIT"
 
     def test_wait_with_zero_replicas(self):
-        """WAIT 0 <timeout> should return 0."""
+        """WAIT 0 <timeout> should return replica count (0 if none connected)."""
+        ReplicaManager.reset()
+        
         cmd = WaitCommand()
         result = asyncio.run(cmd.execute(["0", "1000"]))
         
+        # Returns 0 because no replicas are connected
         assert result == 0
 
     def test_wait_requires_two_args(self):
@@ -61,15 +65,20 @@ class TestWaitCommand:
 
     def test_wait_with_positive_replicas_no_replicas_connected(self):
         """WAIT with positive numreplicas returns 0 when no replicas are connected."""
+        ReplicaManager.reset()
+        
         cmd = WaitCommand()
         
-        # For now, this should return 0 (no replicas)
+        # Returns 0 because no replicas are connected
         result = asyncio.run(cmd.execute(["3", "5000"]))
         assert result == 0
 
     def test_wait_accepts_zero_timeout(self):
         """WAIT accepts 0 as timeout (no wait)."""
+        ReplicaManager.reset()
+        
         cmd = WaitCommand()
         
         result = asyncio.run(cmd.execute(["0", "0"]))
         assert result == 0
+

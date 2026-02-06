@@ -47,16 +47,11 @@ class WaitCommand(BaseCommand):
         if timeout < 0:
             raise ValueError("ERR timeout must be non-negative")
         
-        # For now, handle the simplest case:
-        # When client needs 0 replicas and master has no replicas, return 0
-        if numreplicas == 0:
-            return 0
+        # Get the number of connected replicas
+        from ..replica_manager import ReplicaManager
+        replica_count = ReplicaManager.get_replica_count()
         
-        # TODO: In later stages, implement:
-        # - Track number of connected replicas
-        # - Send GETACK to replicas to verify acknowledgements
-        # - Wait up to timeout for responses
-        # - Return count of replicas that acknowledged
-        
-        # For now, return 0 (no replicas connected)
-        return 0
+        # For this stage, return the number of connected replicas
+        # We assume all replicas are in sync at offset 0
+        # since no write commands have been propagated yet
+        return replica_count

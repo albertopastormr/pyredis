@@ -3,8 +3,12 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "codecrafters-redis"
-version = "0.1.0"
+name = "pyredis"
+version = "1.0.0"
+description = "A Redis server implementation in Python with async I/O and full RESP protocol support"
+authors = [{name = "Alberto Pastor"}]
+readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.9"
 dependencies = []
 
