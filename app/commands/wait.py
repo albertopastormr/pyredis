@@ -47,7 +47,6 @@ class WaitCommand(BaseCommand):
         if timeout < 0:
             raise ValueError("ERR timeout must be non-negative")
         
-        # Use ReplicaManager to wait for replication
         from ..replica_manager import ReplicaManager
         acknowledged_count = await ReplicaManager.wait_for_replication(numreplicas, timeout)
         

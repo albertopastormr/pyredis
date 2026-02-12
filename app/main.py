@@ -28,7 +28,15 @@ async def main() -> None:
         type=str,
         help='Master server to replicate from (format: "host port")',
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug logging",
+    )
     args = parser.parse_args()
+
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
 
     # Initialize server configuration based on replicaof flag
     if args.replicaof:

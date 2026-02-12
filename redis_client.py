@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Simple interactive Redis client for testing."""
 
+import shlex
 import socket
 
 from app.resp import RESPParser
@@ -71,7 +72,11 @@ def main():
                 print(f"Raw mode: {'ON' if show_raw else 'OFF'}")
                 continue
 
-            parts = user_input.split()
+            try:
+                parts = shlex.split(user_input)
+            except ValueError as e:
+                print(f"❌ Error parsing command: {e}")
+                continue
 
             try:
                 parsed, raw_bytes = send_command(sock, *parts)

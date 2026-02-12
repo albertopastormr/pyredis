@@ -31,7 +31,7 @@ class GetCommand(BaseCommand):
         self.validate_args(args, min_args=1, max_args=1)
         
         key = args[0]
-        # TODO: Implement actual storage lookup
+
         # For now, return nil (key not found)
         return None
 ```
