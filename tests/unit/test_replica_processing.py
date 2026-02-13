@@ -1,11 +1,9 @@
 """Unit tests for replica command processing with from_replication flag."""
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
-import pytest
-
-from app.config import ReplicationConfig, Role, ServerConfig
+from app.config import Role, ServerConfig
 from app.handler import execute_command
 from app.replica_manager import ReplicaManager
 

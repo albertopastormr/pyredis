@@ -1,10 +1,7 @@
 """Integration test for REPLCONF GETACK offset tracking."""
 
-import asyncio
-import pytest
-
 from app.replication import ReplicationClient
-from app.resp import RESPEncoder, RESPParser
+from app.resp import RESPEncoder
 
 
 class MockStreamWriter:

@@ -8,7 +8,6 @@ from typing import Optional
 
 from app.exceptions import WrongTypeError
 
-
 # Stream ID constants
 MIN_STREAM_MS = 0
 MIN_STREAM_SEQ = 0
@@ -345,7 +344,7 @@ class RedisStream(RedisValue):
                             raise
                         raise ValueError(
                             "ERR Invalid stream ID specified as stream command argument"
-                        )
+                        ) from None
 
         # Not a wildcard pattern, return as-is
         return entry_id
@@ -439,7 +438,7 @@ class RedisStream(RedisValue):
         except (ValueError, AttributeError) as e:
             if "Invalid stream ID" in str(e):
                 raise
-            raise ValueError("ERR Invalid stream ID specified as stream command argument")
+            raise ValueError("ERR Invalid stream ID specified as stream command argument") from None
 
     def get_info(self) -> dict:
         """

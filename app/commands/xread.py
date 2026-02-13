@@ -48,7 +48,7 @@ class XreadCommand(BaseCommand):
             except ValueError as e:
                 if "negative" in str(e):
                     raise
-                raise ValueError("ERR timeout is not an integer or out of range")
+                raise ValueError("ERR timeout is not an integer or out of range") from None
             idx = 2
 
         # Expect STREAMS keyword

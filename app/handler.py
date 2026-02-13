@@ -4,13 +4,13 @@ import asyncio
 import logging
 from typing import Any
 
-logger = logging.getLogger(__name__)
-
 from .commands import CommandRegistry
 from .config import ServerConfig
 from .replica_manager import ReplicaManager
 from .resp import RESPEncoder, RESPParser
 from .transaction import get_transaction_context, remove_transaction_context
+
+logger = logging.getLogger(__name__)
 
 
 async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:

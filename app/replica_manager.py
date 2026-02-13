@@ -4,9 +4,9 @@ import asyncio
 import logging
 from typing import Any
 
-logger = logging.getLogger(__name__)
+from .resp import RESPEncoder
 
-from .resp import RESPEncoder, RESPParser
+logger = logging.getLogger(__name__)
 
 
 class ReplicaManager:
@@ -86,7 +86,7 @@ class ReplicaManager:
         )
 
         # Send to all replicas without waiting for response
-        for connection_id, (reader, writer) in cls._replicas.items():
+        for connection_id, (_reader, writer) in cls._replicas.items():
             try:
                 writer.write(encoded)
                 await writer.drain()
@@ -139,7 +139,7 @@ class ReplicaManager:
 
         # Send GETACK to all replicas
         getack_command = RESPEncoder.encode(["REPLCONF", "GETACK", "*"])
-        for connection_id, (reader, writer) in cls._replicas.items():
+        for connection_id, (_reader, writer) in cls._replicas.items():
             try:
                 writer.write(getack_command)
                 await writer.drain()
@@ -157,7 +157,7 @@ class ReplicaManager:
         try:
             return await asyncio.wait_for(_wait_condition(), timeout=timeout_ms / 1000.0)
         except asyncio.TimeoutError:
-            logger.warning(f"[ReplicaManager] Timeout waiting for ACKs")
+            logger.warning("[ReplicaManager] Timeout waiting for ACKs")
             return cls._count_acks(target_offset)
 
     @classmethod

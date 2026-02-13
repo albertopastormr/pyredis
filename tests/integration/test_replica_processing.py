@@ -1,10 +1,6 @@
 """Integration tests for replica command processing."""
 
-import asyncio
-
-import pytest
-
-from app.config import ReplicationConfig, Role, ServerConfig
+from app.config import Role, ServerConfig
 from app.replica_manager import ReplicaManager
 from tests.helpers import execute_command
 
@@ -25,9 +21,7 @@ class TestReplicaCommandProcessing:
     def test_propagated_command_updates_storage(self):
         """Test that propagated commands update replica storage."""
         # Execute command as if from replication
-        result = execute_command(
-            ["SET", "replicated_key", "replicated_value"], from_replication=True
-        )
+        execute_command(["SET", "replicated_key", "replicated_value"], from_replication=True)
 
         # Verify it was stored
         stored_value = execute_command(["GET", "replicated_key"])
@@ -74,7 +68,7 @@ class TestReplicaCommandProcessing:
 
     def test_no_double_propagation(self):
         """Test that propagated commands don't get re-propagated."""
-        from unittest.mock import MagicMock, AsyncMock
+        from unittest.mock import AsyncMock, MagicMock
 
         # Add a mock replica
         mock_reader = MagicMock()
@@ -104,7 +98,7 @@ class TestMasterToReplicaPropagation:
 
     def test_master_propagates_to_multiple_replicas(self):
         """Test that master propagates to all connected replicas."""
-        from unittest.mock import MagicMock, AsyncMock
+        from unittest.mock import AsyncMock, MagicMock
 
         # Create mock replicas
         reader1 = MagicMock()
@@ -130,7 +124,7 @@ class TestMasterToReplicaPropagation:
 
     def test_client_command_propagated_replica_command_not(self):
         """Test that client commands propagate but replica commands don't."""
-        from unittest.mock import MagicMock, AsyncMock
+        from unittest.mock import AsyncMock, MagicMock
 
         mock_reader = MagicMock()
         mock_replica = MagicMock()

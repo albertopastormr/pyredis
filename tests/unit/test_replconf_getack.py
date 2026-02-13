@@ -1,7 +1,5 @@
 """Unit tests for REPLCONF GETACK functionality."""
 
-import pytest
-
 from app.resp import RESPEncoder, RESPParser
 
 

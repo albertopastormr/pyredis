@@ -41,7 +41,7 @@ class TestXinfoIntegration:
     def test_xinfo_stream_nonexistent(self):
         """Test XINFO STREAM on nonexistent stream."""
         # Trying to get info on non-existent stream should raise error
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             execute_command(["XINFO", "STREAM", "nonexistent"])
 
     def test_xinfo_requires_arguments(self):

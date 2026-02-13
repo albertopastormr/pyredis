@@ -4,7 +4,7 @@ Command registry - Auto-discovers and registers all commands.
 This module provides a central registry for all Redis commands.
 """
 
-from typing import Any, Dict, List, Type
+from typing import Any
 
 from .base import BaseCommand
 from .blpop import BlpopCommand
@@ -35,10 +35,10 @@ from .xread import XreadCommand
 class CommandRegistry:
     """Central registry for all Redis commands."""
 
-    _commands: Dict[str, Type[BaseCommand]] = {}
+    _commands: dict[str, type[BaseCommand]] = {}
 
     @classmethod
-    def register(cls, command_class: Type[BaseCommand]) -> None:
+    def register(cls, command_class: type[BaseCommand]) -> None:
         """
         Register a command class.
 
@@ -50,7 +50,7 @@ class CommandRegistry:
         cls._commands[instance.name.upper()] = command_class
 
     @classmethod
-    def execute(cls, command_name: str, args: List[str]) -> Any:
+    def execute(cls, command_name: str, args: list[str]) -> Any:
         """
         Execute a command by name.
 
@@ -74,7 +74,7 @@ class CommandRegistry:
         return command.execute(args)
 
     @classmethod
-    def get_all_commands(cls) -> List[str]:
+    def get_all_commands(cls) -> list[str]:
         """Get list of all registered command names."""
         return sorted(cls._commands.keys())
 

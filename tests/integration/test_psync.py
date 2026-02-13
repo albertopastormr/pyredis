@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.config import ReplicationConfig, Role, ServerConfig
+from app.config import Role, ServerConfig
 from app.rdb import EMPTY_RDB
 from app.resp import RESPEncoder
 from tests.helpers import execute_command

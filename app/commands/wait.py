@@ -39,7 +39,7 @@ class WaitCommand(BaseCommand):
             numreplicas = int(args[0])
             timeout = int(args[1])
         except ValueError:
-            raise ValueError("ERR value is not an integer or out of range")
+            raise ValueError("ERR value is not an integer or out of range") from None
 
         if numreplicas < 0:
             raise ValueError("ERR numreplicas must be non-negative")

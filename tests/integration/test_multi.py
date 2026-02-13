@@ -5,7 +5,7 @@ import asyncio
 import pytest
 
 from app.handler import execute_command
-from app.transaction import get_transaction_context, remove_transaction_context
+from app.transaction import get_transaction_context
 
 
 @pytest.fixture(autouse=True)

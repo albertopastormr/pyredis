@@ -1,6 +1,7 @@
 """Unit tests for WAIT command."""
 
 import asyncio
+
 import pytest
 
 from app.commands.wait import WaitCommand

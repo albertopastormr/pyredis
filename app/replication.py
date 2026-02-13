@@ -60,7 +60,7 @@ class ReplicationClient:
             logger.info("✅ Connected to master server")
         except Exception as e:
             logger.error(f"❌ Failed to connect to master: {e}")
-            raise ConnectionError(f"Failed to connect to master: {e}")
+            raise ConnectionError(f"Failed to connect to master: {e}") from e
 
     async def send_ping(self) -> None:
         """

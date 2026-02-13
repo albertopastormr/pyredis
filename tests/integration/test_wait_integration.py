@@ -1,7 +1,5 @@
 """Integration test for WAIT command."""
 
-import asyncio
-
 from app.resp import RESPEncoder, RESPParser
 
 

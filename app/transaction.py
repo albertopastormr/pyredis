@@ -1,6 +1,6 @@
 """Transaction management for Redis MULTI/EXEC/DISCARD commands."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class TransactionContext:
@@ -14,7 +14,7 @@ class TransactionContext:
     def __init__(self):
         """Initialize transaction context."""
         self._in_transaction = False
-        self._queued_commands: List[tuple[str, List[str]]] = []
+        self._queued_commands: list[tuple[str, list[str]]] = []
 
     @property
     def in_transaction(self) -> bool:
@@ -26,7 +26,7 @@ class TransactionContext:
         self._in_transaction = True
         self._queued_commands = []
 
-    def queue_command(self, command_name: str, args: List[str]) -> None:
+    def queue_command(self, command_name: str, args: list[str]) -> None:
         """
         Queue a command for later execution.
 
@@ -36,7 +36,7 @@ class TransactionContext:
         """
         self._queued_commands.append((command_name, args))
 
-    def get_queued_commands(self) -> List[tuple[str, List[str]]]:
+    def get_queued_commands(self) -> list[tuple[str, list[str]]]:
         """
         Get all queued commands.
 
@@ -57,7 +57,7 @@ class TransactionContext:
 
 # Global registry of transaction contexts per connection
 # Key: connection identifier (e.g., peername tuple)
-_transaction_contexts: Dict[Any, TransactionContext] = {}
+_transaction_contexts: dict[Any, TransactionContext] = {}
 
 
 def get_transaction_context(connection_id: Any) -> TransactionContext:

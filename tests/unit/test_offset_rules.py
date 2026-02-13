@@ -1,6 +1,5 @@
 """Test to verify offset tracking follows the correct rules."""
 
-import pytest
 from app.resp import RESPEncoder
 
 
