@@ -8,8 +8,8 @@ export PATH := $(HOME)/.local/bin:$(PATH)
 help:
 	@echo "Available commands:"
 	@echo "  make check    - Run all checks (format, lint, test)"
-	@echo "  make format   - Format code with ruff"
-	@echo "  make lint     - Lint code with ruff"
+	@echo "  make format   - Auto-format and auto-fix code with ruff"
+	@echo "  make lint     - Verify formatting and lint (no auto-fix, mirrors CI)"
 	@echo "  make test     - Run tests with pytest"
 	@echo "  make install  - Install dev dependencies with uv"
 	@echo "  make clean    - Clean up cache files"
@@ -18,12 +18,14 @@ check: format lint test
 	@echo "✅ All checks passed!"
 
 format:
-	@echo "🎨 Formatting code..."
+	@echo "🎨 Formatting and fixing code..."
 	@uv run ruff format .
+	@uv run ruff check . --fix
 
 lint:
-	@echo "🔍 Linting code..."
-	@uv run ruff check . --fix
+	@echo "🔍 Verifying code (matches CI)..."
+	@uv run ruff format --check .
+	@uv run ruff check .
 
 test:
 	@echo "🧪 Running tests..."
