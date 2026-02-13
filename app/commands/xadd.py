@@ -21,7 +21,7 @@ class XaddCommand(BaseCommand):
     @property
     def name(self) -> str:
         return "XADD"
-    
+
     @property
     def is_write_command(self) -> bool:
         """XADD modifies data and must be propagated to replicas."""
@@ -66,4 +66,3 @@ class XaddCommand(BaseCommand):
         notify_key(key, available_count=1)
 
         return result_id
-

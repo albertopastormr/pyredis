@@ -13,10 +13,10 @@ class TestXinfoIntegration:
         """Test XINFO STREAM on stream with entries."""
         # Create a stream with one entry
         execute_command(["XADD", "mystream", "1000-0", "field1", "value1"])
-        
+
         # Get stream info
         result = execute_command(["XINFO", "STREAM", "mystream"])
-        
+
         # Should return array with stream information
         assert isinstance(result, list)
         # First element should be "length"
@@ -28,10 +28,10 @@ class TestXinfoIntegration:
         execute_command(["XADD", "mystream", "1000-0", "field1", "value1"])
         execute_command(["XADD", "mystream", "1001-0", "field2", "value2"])
         execute_command(["XADD", "mystream", "1002-0", "field3", "value3"])
-        
+
         # Get stream info
         result = execute_command(["XINFO", "STREAM", "mystream"])
-        
+
         assert isinstance(result, list)
         # Find length in the result
         if "length" in result:
@@ -49,7 +49,7 @@ class TestXinfoIntegration:
         # No arguments
         with pytest.raises(ValueError, match="wrong number of arguments"):
             execute_command(["XINFO"])
-        
+
         # Only subcommand, no key
         with pytest.raises(ValueError, match="wrong number of arguments"):
             execute_command(["XINFO", "STREAM"])
@@ -58,7 +58,7 @@ class TestXinfoIntegration:
         """Test XINFO command RESP encoding."""
         # Encode XINFO STREAM command
         encoded = RESPEncoder.encode(["XINFO", "STREAM", "mystream"])
-        
+
         # Verify RESP format
         assert encoded.startswith(b"*3\r\n")
         assert b"$5\r\nXINFO\r\n" in encoded

@@ -19,7 +19,7 @@ class TestExecCommand:
     def test_exec_without_multi_fails(self, exec_command):
         """EXEC without MULTI raises error."""
         connection_id = ("127.0.0.1", 10001)
-        
+
         with pytest.raises(ValueError, match="ERR EXEC without MULTI"):
             asyncio.run(exec_command.execute([], connection_id=connection_id))
 
@@ -31,7 +31,7 @@ class TestExecCommand:
     def test_exec_with_args_fails(self, exec_command):
         """EXEC with arguments raises error."""
         connection_id = ("127.0.0.1", 10002)
-        
+
         with pytest.raises(ValueError, match="wrong number of arguments"):
             asyncio.run(exec_command.execute(["arg"], connection_id=connection_id))
 

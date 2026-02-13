@@ -20,7 +20,7 @@ class TestIncrIntegration:
         """INCR on nonexistent key sets it to 1."""
         storage = get_storage()
         result = storage.incr("counter")
-        
+
         assert result == 1
         assert storage.get("counter") == "1"
 
@@ -28,16 +28,16 @@ class TestIncrIntegration:
         """INCR increments existing integer value."""
         storage = get_storage()
         storage.set("counter", "5")
-        
+
         result = storage.incr("counter")
-        
+
         assert result == 6
         assert storage.get("counter") == "6"
 
     def test_incr_multiple_times(self):
         """INCR can be called multiple times."""
         storage = get_storage()
-        
+
         assert storage.incr("counter") == 1
         assert storage.incr("counter") == 2
         assert storage.incr("counter") == 3
@@ -47,9 +47,9 @@ class TestIncrIntegration:
         """INCR can increment negative values."""
         storage = get_storage()
         storage.set("counter", "-5")
-        
+
         result = storage.incr("counter")
-        
+
         assert result == -4
         assert storage.get("counter") == "-4"
 
@@ -57,9 +57,9 @@ class TestIncrIntegration:
         """INCR increments zero to one."""
         storage = get_storage()
         storage.set("counter", "0")
-        
+
         result = storage.incr("counter")
-        
+
         assert result == 1
         assert storage.get("counter") == "1"
 
@@ -67,7 +67,7 @@ class TestIncrIntegration:
         """INCR raises error for non-integer string."""
         storage = get_storage()
         storage.set("text", "hello")
-        
+
         with pytest.raises(ValueError, match="value is not an integer or out of range"):
             storage.incr("text")
 
@@ -75,7 +75,7 @@ class TestIncrIntegration:
         """INCR raises error for float string."""
         storage = get_storage()
         storage.set("float", "3.14")
-        
+
         with pytest.raises(ValueError, match="value is not an integer or out of range"):
             storage.incr("float")
 
@@ -83,7 +83,7 @@ class TestIncrIntegration:
         """INCR raises error for empty string."""
         storage = get_storage()
         storage.set("empty", "")
-        
+
         with pytest.raises(ValueError, match="value is not an integer or out of range"):
             storage.incr("empty")
 
@@ -91,17 +91,17 @@ class TestIncrIntegration:
         """INCR raises error for whitespace."""
         storage = get_storage()
         storage.set("whitespace", "  ")
-        
+
         with pytest.raises(ValueError, match="value is not an integer or out of range"):
             storage.incr("whitespace")
 
     def test_incr_wrong_type_error(self):
         """INCR raises error when key holds a list."""
         from app.exceptions import WrongTypeError
-        
+
         storage = get_storage()
         storage.lpush("mylist", "a", "b", "c")
-        
+
         with pytest.raises(WrongTypeError):
             storage.incr("mylist")
 
@@ -109,9 +109,9 @@ class TestIncrIntegration:
         """INCR works with large numbers."""
         storage = get_storage()
         storage.set("bignum", "999999999999")
-        
+
         result = storage.incr("bignum")
-        
+
         assert result == 1000000000000
         assert storage.get("bignum") == "1000000000000"
 
@@ -119,7 +119,7 @@ class TestIncrIntegration:
         """INCR keeps value as string in storage."""
         storage = get_storage()
         storage.incr("counter")
-        
+
         # Value should be stored as string
         value = storage.get("counter")
         assert isinstance(value, str)

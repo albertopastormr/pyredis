@@ -27,13 +27,9 @@ class TestXreadCommand:
     def test_xread_single_stream(self, mock_get_storage, xread_command, mock_storage):
         """XREAD returns entries for a single stream."""
         mock_get_storage.return_value = mock_storage
-        mock_storage.xread.return_value = [
-            ("mystream", [("1-1", {"field": "value"})])
-        ]
+        mock_storage.xread.return_value = [("mystream", [("1-1", {"field": "value"})])]
 
-        result = asyncio.run(
-            xread_command.execute(["STREAMS", "mystream", "1-0"])
-        )
+        result = asyncio.run(xread_command.execute(["STREAMS", "mystream", "1-0"]))
 
         mock_storage.xread.assert_called_once_with([("mystream", "1-0")])
         assert result == [["mystream", [["1-1", ["field", "value"]]]]]
@@ -44,12 +40,10 @@ class TestXreadCommand:
         mock_get_storage.return_value = mock_storage
         mock_storage.xread.return_value = [
             ("stream1", [("1-1", {"a": "1"})]),
-            ("stream2", [("2-1", {"b": "2"})])
+            ("stream2", [("2-1", {"b": "2"})]),
         ]
 
-        result = asyncio.run(
-            xread_command.execute(["STREAMS", "stream1", "stream2", "1-0", "2-0"])
-        )
+        result = asyncio.run(xread_command.execute(["STREAMS", "stream1", "stream2", "1-0", "2-0"]))
 
         mock_storage.xread.assert_called_once_with([("stream1", "1-0"), ("stream2", "2-0")])
         assert len(result) == 2
@@ -62,9 +56,7 @@ class TestXreadCommand:
         mock_get_storage.return_value = mock_storage
         mock_storage.xread.return_value = []
 
-        result = asyncio.run(
-            xread_command.execute(["STREAMS", "mystream", "1-0"])
-        )
+        result = asyncio.run(xread_command.execute(["STREAMS", "mystream", "1-0"]))
 
         assert result is None
 
@@ -72,13 +64,9 @@ class TestXreadCommand:
     def test_xread_multiple_fields(self, mock_get_storage, xread_command, mock_storage):
         """XREAD formats multiple fields correctly."""
         mock_get_storage.return_value = mock_storage
-        mock_storage.xread.return_value = [
-            ("mystream", [("1-1", {"a": "1", "b": "2", "c": "3"})])
-        ]
+        mock_storage.xread.return_value = [("mystream", [("1-1", {"a": "1", "b": "2", "c": "3"})])]
 
-        result = asyncio.run(
-            xread_command.execute(["STREAMS", "mystream", "0-0"])
-        )
+        result = asyncio.run(xread_command.execute(["STREAMS", "mystream", "0-0"]))
 
         # Fields should be flattened
         assert len(result[0][1][0][1]) == 6  # 3 field-value pairs = 6 items
@@ -130,16 +118,14 @@ class TestXreadBlockParsing:
         return Mock()
 
     @patch("app.commands.xread.get_storage")
-    def test_xread_block_with_data_returns_immediately(self, mock_get_storage, xread_command, mock_storage):
+    def test_xread_block_with_data_returns_immediately(
+        self, mock_get_storage, xread_command, mock_storage
+    ):
         """XREAD BLOCK returns immediately if data exists."""
         mock_get_storage.return_value = mock_storage
-        mock_storage.xread.return_value = [
-            ("mystream", [("1-1", {"field": "value"})])
-        ]
+        mock_storage.xread.return_value = [("mystream", [("1-1", {"field": "value"})])]
 
-        result = asyncio.run(
-            xread_command.execute(["BLOCK", "1000", "STREAMS", "mystream", "0-0"])
-        )
+        result = asyncio.run(xread_command.execute(["BLOCK", "1000", "STREAMS", "mystream", "0-0"]))
 
         assert result == [["mystream", [["1-1", ["field", "value"]]]]]
 
@@ -147,13 +133,9 @@ class TestXreadBlockParsing:
     def test_xread_block_zero_with_data(self, mock_get_storage, xread_command, mock_storage):
         """XREAD BLOCK 0 returns immediately if data exists."""
         mock_get_storage.return_value = mock_storage
-        mock_storage.xread.return_value = [
-            ("mystream", [("1-1", {"a": "1"})])
-        ]
+        mock_storage.xread.return_value = [("mystream", [("1-1", {"a": "1"})])]
 
-        result = asyncio.run(
-            xread_command.execute(["BLOCK", "0", "STREAMS", "mystream", "0-0"])
-        )
+        result = asyncio.run(xread_command.execute(["BLOCK", "0", "STREAMS", "mystream", "0-0"]))
 
         assert result is not None
 
@@ -183,9 +165,6 @@ class TestXreadBlockParsing:
         mock_get_storage.return_value = mock_storage
         mock_storage.xread.return_value = [("mystream", [("1-1", {"a": "1"})])]
 
-        result = asyncio.run(
-            xread_command.execute(["block", "1000", "streams", "mystream", "0-0"])
-        )
+        result = asyncio.run(xread_command.execute(["block", "1000", "streams", "mystream", "0-0"]))
 
         assert result is not None
-

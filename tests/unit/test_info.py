@@ -89,7 +89,7 @@ class TestInfoCommand:
     def test_info_format(self, mock_get_config, info_command):
         """INFO response has correct format with newlines."""
         mock_get_config.return_value = ReplicationConfig(role=Role.MASTER)
-        
+
         result = asyncio.run(info_command.execute(["replication"]))
 
         lines = result.split("\n")

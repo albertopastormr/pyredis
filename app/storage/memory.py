@@ -120,13 +120,13 @@ class InMemoryStorage(BaseStorage):
             ValueError: If the key contains a value that cannot be represented as integer
         """
         current_value = self.get(key)
-        
+
         # If key doesn't exist, treat as 0
         if current_value is None:
             new_value = 1
             self.set(key, str(new_value))
             return new_value
-        
+
         # Try to parse and increment
         try:
             int_value = int(current_value)
@@ -387,6 +387,7 @@ class InMemoryStorage(BaseStorage):
             value = self._data[key]
             if not isinstance(value, RedisStream):
                 from app.exceptions import WrongTypeError
+
                 raise WrongTypeError()
 
             entries = value.xread(start_id)
@@ -412,6 +413,7 @@ class InMemoryStorage(BaseStorage):
         value = self._data[key]
         if not isinstance(value, RedisStream):
             from app.exceptions import WrongTypeError
+
             raise WrongTypeError()
 
         return value.get_info()

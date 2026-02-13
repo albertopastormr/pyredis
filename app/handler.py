@@ -33,14 +33,15 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             if not data:
                 break
 
-
             logger.debug(f"[{addr}] Received {len(data)} bytes")
 
             try:
                 command = RESPParser.parse(data)
                 logger.debug(f"[{addr}] Parsed command: {command}")
 
-                response = await execute_command(command, connection_id=addr, reader=reader, writer=writer)
+                response = await execute_command(
+                    command, connection_id=addr, reader=reader, writer=writer
+                )
 
                 response_bytes = RESPEncoder.encode(response)
                 writer.write(response_bytes)
@@ -65,11 +66,11 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
 
 async def execute_command(
-    args: list[str], 
-    connection_id: Any = None, 
+    args: list[str],
+    connection_id: Any = None,
     reader: asyncio.StreamReader = None,
     writer: asyncio.StreamWriter = None,
-    from_replication: bool = False
+    from_replication: bool = False,
 ) -> Any:
     """
     Execute a command asynchronously.
@@ -106,23 +107,28 @@ async def execute_command(
     if connection_id is not None:
         transaction_ctx = get_transaction_context(connection_id)
 
-    if transaction_ctx and transaction_ctx.in_transaction and not command_obj.bypasses_transaction_queue:
+    if (
+        transaction_ctx
+        and transaction_ctx.in_transaction
+        and not command_obj.bypasses_transaction_queue
+    ):
         transaction_ctx.queue_command(command_name, command_args)
         return {"queued": "QUEUED"}
 
-    
     result = await command_obj.execute(command_args, connection_id=connection_id)
-    
+
     # if replica is connecting, register it
     if command_name.upper() == "PSYNC" and reader is not None and writer is not None:
         if isinstance(result, dict) and "fullresync" in result:
             ReplicaManager.add_replica(connection_id, reader, writer)
             logger.info(f"[Handler] Registered replica {connection_id}")
-    
-    
+
     # Propagate write commands to replicas (only if master and not already from replication)
     if not from_replication:
-        if ServerConfig.get_replication_config().role.value == "master" and command_obj.is_write_command:
+        if (
+            ServerConfig.get_replication_config().role.value == "master"
+            and command_obj.is_write_command
+        ):
             await ReplicaManager.propagate_command(command_name, command_args)
-    
+
     return result

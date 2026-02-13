@@ -29,7 +29,7 @@ class TestMultiCommand:
         result = asyncio.run(multi_command.execute([], connection_id=connection_id))
 
         assert result == {"ok": "OK"}
-        
+
         # Verify transaction was started
         ctx = get_transaction_context(connection_id)
         assert ctx.in_transaction is True

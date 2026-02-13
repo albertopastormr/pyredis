@@ -20,7 +20,7 @@ class RpushCommand(BaseCommand):
     @property
     def name(self) -> str:
         return "RPUSH"
-    
+
     @property
     def is_write_command(self) -> bool:
         """RPUSH modifies data and must be propagated to replicas."""

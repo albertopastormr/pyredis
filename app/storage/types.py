@@ -184,7 +184,7 @@ class RedisStream(RedisValue):
         result = []
         for entry in self.entries:
             entry_ms, entry_seq = self._parse_entry_id(entry.id)
-            
+
             # Check if entry is within range (inclusive)
             if self._is_in_range(entry_ms, entry_seq, start_ms, start_seq, end_ms, end_seq):
                 result.append(entry)
@@ -233,18 +233,18 @@ class RedisStream(RedisValue):
         if range_id == "-":
             # Minimum possible ID
             return (MIN_STREAM_MS, MIN_STREAM_SEQ)
-        
+
         if range_id == "+":
             # Maximum possible ID
             return (MAX_STREAM_MS, MAX_STREAM_SEQ)
-        
+
         if "-" not in range_id:
             # No sequence number provided
             ms_time = int(range_id)
             # Start ID defaults to 0, end ID defaults to max sequence
             seq_num = MIN_STREAM_SEQ if is_start else MAX_STREAM_SEQ
             return ms_time, seq_num
-        
+
         # Has sequence number, parse normally
         return self._parse_entry_id(range_id)
 
@@ -325,24 +325,28 @@ class RedisStream(RedisValue):
             ms_time = time.time_ns() // 1_000_000
             seq_num = self._get_next_sequence_number(ms_time)
             return f"{ms_time}-{seq_num}"
-        
+
         if "-" in entry_id:
             parts = entry_id.split("-", 1)
             if len(parts) == 2:
                 ms_part, seq_part = parts
-                
+
                 if seq_part == "*":
                     try:
                         ms_time = int(ms_part)
                         if ms_time < 0:
-                            raise ValueError("ERR Invalid stream ID specified as stream command argument")
+                            raise ValueError(
+                                "ERR Invalid stream ID specified as stream command argument"
+                            )
                         seq_num = self._get_next_sequence_number(ms_time)
                         return f"{ms_time}-{seq_num}"
                     except ValueError as e:
                         if "Invalid stream ID" in str(e):
                             raise
-                        raise ValueError("ERR Invalid stream ID specified as stream command argument")
-        
+                        raise ValueError(
+                            "ERR Invalid stream ID specified as stream command argument"
+                        )
+
         # Not a wildcard pattern, return as-is
         return entry_id
 
@@ -359,11 +363,11 @@ class RedisStream(RedisValue):
         if not self.entries:
             # Empty stream: use 0 for timestamp > 0, use 1 for timestamp = 0
             return 1 if ms_time == 0 else 0
-        
+
         # Get last entry's timestamp and sequence
         last_entry_id = self.entries[-1].id
         last_ms_time, last_seq_num = self._parse_entry_id(last_entry_id)
-        
+
         if ms_time == last_ms_time:
             # Same timestamp: increment sequence
             return last_seq_num + 1
@@ -388,9 +392,7 @@ class RedisStream(RedisValue):
 
         # Check for minimum ID (0-0 is never valid)
         if ms_time == 0 and seq_num == 0:
-            raise ValueError(
-                "ERR The ID specified in XADD must be greater than 0-0"
-            )
+            raise ValueError("ERR The ID specified in XADD must be greater than 0-0")
 
         # Validate against last entry if stream has entries
         if self.entries:

@@ -31,10 +31,10 @@ class ReplicationClient:
     def _is_replconf_getack(command) -> bool:
         """
         Check if a command is REPLCONF GETACK.
-        
+
         Args:
             command: Parsed command as a list of strings
-            
+
         Returns:
             True if command is REPLCONF GETACK, False otherwise
         """
@@ -72,96 +72,96 @@ class ReplicationClient:
             raise RuntimeError("Not connected to master")
 
         ping_command = RESPEncoder.encode(["PING"])
-        
+
         logger.info("Sending PING to master...")
         self.writer.write(ping_command)
         await self.writer.drain()
-        
+
         # Read and parse response (expecting +PONG\r\n)
-        response_line = await self.reader.readuntil(b'\r\n')
-        response = response_line.decode('utf-8').strip()
-        
+        response_line = await self.reader.readuntil(b"\r\n")
+        response = response_line.decode("utf-8").strip()
+
         if response != "+PONG":
             raise RuntimeError(f"Unexpected response to PING: {response}")
-        
+
         logger.info("✅ PING acknowledged with PONG")
 
     async def send_replconf_listening_port(self, port: int) -> None:
         """
         Send REPLCONF listening-port command to master.
-        
+
         Args:
             port: The port this replica is listening on
-            
+
         The command is sent as: REPLCONF listening-port <PORT>
         """
         if not self.writer:
             raise RuntimeError("Not connected to master")
 
         replconf_command = RESPEncoder.encode(["REPLCONF", "listening-port", str(port)])
-        
+
         logger.info(f"Sending REPLCONF listening-port {port} to master...")
         self.writer.write(replconf_command)
         await self.writer.drain()
-        
-        response_line = await self.reader.readuntil(b'\r\n')
-        response = response_line.decode('utf-8').strip()
+
+        response_line = await self.reader.readuntil(b"\r\n")
+        response = response_line.decode("utf-8").strip()
         if response != "+OK":
             raise RuntimeError(f"Unexpected response to REPLCONF listening-port: {response}")
-        
+
         logger.info("✅ REPLCONF listening-port acknowledged")
 
     async def send_replconf_capa(self) -> None:
         """
         Send REPLCONF capa psync2 command to master.
-        
+
         This notifies the master that the replica supports PSYNC2 protocol.
         """
         if not self.writer:
             raise RuntimeError("Not connected to master")
 
         replconf_command = RESPEncoder.encode(["REPLCONF", "capa", "psync2"])
-        
+
         logger.info("Sending REPLCONF capa psync2 to master...")
         self.writer.write(replconf_command)
         await self.writer.drain()
-        
-        response_line = await self.reader.readuntil(b'\r\n')
-        response = response_line.decode('utf-8').strip()
+
+        response_line = await self.reader.readuntil(b"\r\n")
+        response = response_line.decode("utf-8").strip()
         if response != "+OK":
             raise RuntimeError(f"Unexpected response to REPLCONF capa: {response}")
-        
+
         logger.info("✅ REPLCONF capa acknowledged")
 
     async def send_psync(self, repl_id: str = "?", offset: int = -1) -> None:
         """
         Send PSYNC command to master to initiate synchronization.
-        
+
         Args:
             repl_id: Replication ID (use "?" for initial sync)
             offset: Replication offset (use -1 for initial sync)
-            
+
         The command is sent as: PSYNC <repl_id> <offset>
         For initial sync: PSYNC ? -1
-        
+
         The master responds with: +FULLRESYNC <REPL_ID> 0\r\n
         """
         if not self.writer:
             raise RuntimeError("Not connected to master")
 
         psync_command = RESPEncoder.encode(["PSYNC", repl_id, str(offset)])
-        
+
         logger.info(f"Sending PSYNC {repl_id} {offset} to master...")
         self.writer.write(psync_command)
         await self.writer.drain()
-        
+
         # Read only the FULLRESYNC line (not bulk read that might consume RDB)
-        response_line = await self.reader.readuntil(b'\r\n')
-        response = response_line.decode('utf-8').strip()
-        
+        response_line = await self.reader.readuntil(b"\r\n")
+        response = response_line.decode("utf-8").strip()
+
         if not response.startswith("+FULLRESYNC"):
             raise RuntimeError(f"Unexpected response to PSYNC: {response}")
-        
+
         # Parse: +FULLRESYNC <repl_id> <offset>
         parts = response[1:].split()  # Skip the '+'
         if len(parts) == 3:
@@ -170,65 +170,65 @@ class ReplicationClient:
             logger.info(f"✅ PSYNC acknowledged: FULLRESYNC {master_repl_id} {master_offset}")
         else:
             logger.info(f"✅ PSYNC acknowledged: {response}")
-    
+
     async def receive_rdb_file(self) -> None:
         """
         Receive the RDB file from master after PSYNC.
-        
+
         Master sends: $<length>\r\n<binary_data>
         For empty RDB, it's $88\r\n followed by 88 bytes
         """
         if not self.reader:
             raise RuntimeError("Not connected to master")
-        
+
         logger.info("Waiting for RDB file from master...")
-        
+
         # Read the bulk string header: $<length>\r\n
-        header_data = await self.reader.readuntil(b'\r\n')
-        header = header_data.decode('utf-8').strip()
-        
-        if not header.startswith('$'):
+        header_data = await self.reader.readuntil(b"\r\n")
+        header = header_data.decode("utf-8").strip()
+
+        if not header.startswith("$"):
             raise RuntimeError(f"Expected RDB bulk string, got: {header}")
-        
+
         rdb_length = int(header[1:])
         logger.info(f"Receiving RDB file ({rdb_length} bytes)...")
-        
+
         # Read the exact number of bytes for RDB file
         rdb_data = await self.reader.readexactly(rdb_length)
         logger.info(f"✅ Received RDB file ({len(rdb_data)} bytes)")
-    
+
     async def process_commands(self) -> None:
         """
         Process propagated commands from master.
-        
+
         After handshake and RDB file, master sends write commands
         that need to be executed without sending responses.
-        
+
         Special handling for REPLCONF GETACK:
         - Responds with REPLCONF ACK <offset>
         - All other commands are processed silently
         """
         if not self.reader or not self.writer:
             raise RuntimeError("Not connected to master")
-        
+
         # to avoid circular dependency
         from .handler import execute_command
-        
+
         logger.info("📡 Ready to receive propagated commands from master")
-        
+
         buffer = b""  # Buffer for incomplete commands
-        
+
         while True:
             try:
                 # Read data from master (may contain multiple commands)
                 data = await self.reader.read(4096)
-                
+
                 if not data:
                     logger.warning("Master connection closed")
                     break
-                
+
                 buffer += data
-                
+
                 # Parse all complete commands from buffer
                 buffer_offset = 0
                 while buffer_offset < len(buffer):
@@ -237,10 +237,10 @@ class ReplicationClient:
                         logger.info(f"Received propagated command: {command}")
                         # Calculate bytes of this command
                         command_bytes = new_offset - buffer_offset
-                        
+
                         # Check if this is a REPLCONF GETACK command
                         is_getack = self._is_replconf_getack(command)
-                        
+
                         if is_getack:
                             ack_response = RESPEncoder.encode(["REPLCONF", "ACK", str(self.offset)])
                             self.writer.write(ack_response)
@@ -248,20 +248,19 @@ class ReplicationClient:
                             logger.info(f"Sent REPLCONF ACK {self.offset}")
                         else:
                             await execute_command(command, from_replication=True)
-                        
+
                         self.offset += command_bytes
-                        
+
                         buffer_offset = new_offset
                     except ValueError:
                         break
-                
+
                 # Remove processed data from buffer
                 buffer = buffer[buffer_offset:]
-                    
+
             except Exception as e:
                 logger.error(f"Error reading from master: {e}")
                 break
-
 
     async def start_handshake(self) -> None:
         """
@@ -275,12 +274,12 @@ class ReplicationClient:
         """
         await self.connect()
         await self.send_ping()
-        
+
         listening_port = ServerConfig.get_listening_port()
         await self.send_replconf_listening_port(listening_port)
         await self.send_replconf_capa()
         await self.send_psync()
-        
+
         logger.info("✅ Handshake complete")
 
     async def close(self) -> None:
@@ -297,7 +296,7 @@ async def connect_to_master() -> None:
     Reads master host and port from ServerConfig and performs handshake.
     """
     repl_config = ServerConfig.get_replication_config()
-    
+
     if not repl_config.is_slave():
         logger.warning("Not running as replica, skipping master connection")
         return
@@ -313,11 +312,11 @@ async def connect_to_master() -> None:
 
     try:
         await client.start_handshake()
-        
+
         await client.receive_rdb_file()
-        
+
         await client.process_commands()
-        
+
     except Exception as e:
         logger.error(f"Replication failed: {e}")
         # Don't crash the server, just log the error

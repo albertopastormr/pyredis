@@ -143,7 +143,7 @@ class RESPEncoder:
 
         if isinstance(data, bool):
             # Boolean as bulk string (true/false)
-            return RESPEncoder._encode_bulk_string('true' if data else 'false')
+            return RESPEncoder._encode_bulk_string("true" if data else "false")
 
         if isinstance(data, int):
             return RESPEncoder._encode_integer(data)
@@ -183,21 +183,21 @@ class RESPEncoder:
             # Null array marker (for BLPOP timeout)
             if "null_array" in data:
                 return b"*-1\r\n"
-            
+
             # FULLRESYNC response with RDB file (for PSYNC)
             if "fullresync" in data:
                 fullresync_data = data["fullresync"]
                 replid = fullresync_data["replid"]
                 offset = fullresync_data["offset"]
                 rdb_bytes = fullresync_data["rdb"]
-                
+
                 response = RESPEncoder._encode_simple_string(f"FULLRESYNC {replid} {offset}")
-                
+
                 # Followed by RDB file: $<length>\r\n<binary_data>
                 # Note: NO trailing \r\n after binary data
                 response += f"${len(rdb_bytes)}\r\n".encode()
                 response += rdb_bytes
-                
+
                 return response
 
         raise ValueError(f"Unsupported type for RESP encoding: {type(data)}")

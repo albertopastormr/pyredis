@@ -48,7 +48,7 @@ class InfoCommand(BaseCommand):
             String with replication info in key:value format
         """
         repl_config = ServerConfig.get_replication_config()
-        
+
         lines = [
             "# Replication",
             f"role:{repl_config.role.value}",

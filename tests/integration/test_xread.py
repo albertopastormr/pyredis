@@ -67,7 +67,9 @@ class TestXreadIntegration:
         execute_command(["XADD", "beta", "1-0", "b", "2"])
         execute_command(["XADD", "gamma", "1-0", "c", "3"])
 
-        result = execute_command(["XREAD", "STREAMS", "gamma", "alpha", "beta", "0-0", "0-0", "0-0"])
+        result = execute_command(
+            ["XREAD", "STREAMS", "gamma", "alpha", "beta", "0-0", "0-0", "0-0"]
+        )
 
         # Order should match command order: gamma, alpha, beta
         assert result[0][0] == "gamma"
@@ -256,5 +258,3 @@ class TestXreadDollarSupport:
         result = execute_command(["XREAD", "STREAMS", "newstream", "$"])
         assert result is None
         # Effectively 0-0. If we add blocking, it would wait for > 0-0.
-
-

@@ -37,13 +37,13 @@ class TestXinfoCommand:
         result = asyncio.run(xinfo_command.execute(["STREAM", "mystream"]))
 
         mock_storage.xinfo.assert_called_once_with("mystream")
-        
+
         # Verify result is a flat list with correct fields
         assert "length" in result
         assert result[result.index("length") + 1] == 1
         assert "last-generated-id" in result
         assert result[result.index("last-generated-id") + 1] == "1-0"
-        
+
     @patch("app.commands.xinfo.get_storage")
     def test_xinfo_empty_stream(self, mock_get_storage, xinfo_command, mock_storage):
         """XINFO STREAM handles empty stream."""
@@ -75,7 +75,7 @@ class TestXinfoCommand:
         result = asyncio.run(xinfo_command.execute(["STREAM", "partial"]))
 
         assert result[result.index("length") + 1] == 5
-        assert result[result.index("last-generated-id") + 1] == "0-0" # Default
+        assert result[result.index("last-generated-id") + 1] == "0-0"  # Default
         assert result[result.index("first-entry") + 1] is None
         assert result[result.index("last-entry") + 1] is None
 

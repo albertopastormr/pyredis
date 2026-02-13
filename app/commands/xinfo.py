@@ -51,14 +51,14 @@ class XinfoCommand(BaseCommand):
 
         if info is None:
             raise ValueError("ERR no such key")
-        
+
         # Format as flat list: [key1, val1, key2, val2, ...]
         result = []
-        
+
         # Add basic fields
         result.extend(["length", info.get("length", 0)])
         result.extend(["last-generated-id", info.get("last-generated-id", "0-0")])
-        
+
         # Add entries (must handle None if empty)
         first = info.get("first-entry")
         if first:
@@ -71,7 +71,7 @@ class XinfoCommand(BaseCommand):
             result.extend(["first-entry", [entry_id, fields_array]])
         else:
             result.extend(["first-entry", None])
-            
+
         last = info.get("last-entry")
         if last:
             entry_id, fields = last

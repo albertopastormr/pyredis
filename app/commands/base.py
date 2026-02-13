@@ -17,21 +17,21 @@ class BaseCommand(ABC):
     def bypasses_transaction_queue(self) -> bool:
         """
         Whether this command bypasses transaction queuing.
-        
+
         Transaction control commands (MULTI, EXEC, DISCARD) should return True.
         All other commands should return False (default).
-        
+
         Returns:
             True if command should execute even when in a transaction,
             False if command should be queued when in a transaction.
         """
         return False
-    
+
     @property
     def is_write_command(self) -> bool:
         """
         Indicates if this command modifies data and should be propagated to replicas.
-        
+
         Write commands (SET, DEL, RPUSH, etc.) should return True.
         Read commands (GET, PING, ECHO, etc.) should return False.
         """

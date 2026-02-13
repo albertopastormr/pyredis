@@ -48,7 +48,7 @@ class XrangeCommand(BaseCommand):
             for field_name, field_value in fields.items():
                 fields_array.append(field_name)
                 fields_array.append(field_value)
-            
+
             result.append([entry_id, fields_array])
 
         return result

@@ -20,7 +20,7 @@ class LpushCommand(BaseCommand):
     @property
     def name(self) -> str:
         return "LPUSH"
-    
+
     @property
     def is_write_command(self) -> bool:
         """LPUSH modifies data and must be propagated to replicas."""

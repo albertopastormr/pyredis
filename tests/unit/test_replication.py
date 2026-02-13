@@ -68,11 +68,11 @@ class TestReplicationClient:
         # Verify PING was written
         mock_writer.write.assert_called_once()
         written_data = mock_writer.write.call_args[0][0]
-        
+
         # Verify RESP format: *1\r\n$4\r\nPING\r\n
         assert written_data == b"*1\r\n$4\r\nPING\r\n"
         mock_writer.drain.assert_called_once()
-        
+
         # Verify response was read
         mock_reader.readuntil.assert_called_once()
 
@@ -92,7 +92,7 @@ class TestReplicationClient:
         # Verify REPLCONF was written
         assert mock_writer.write.call_count == 1
         written_data = mock_writer.write.call_args[0][0]
-        
+
         # Verify RESP format: *3\r\n$8\r\nREPLCONF\r\n$14\r\nlistening-port\r\n$4\r\n6380\r\n
         assert written_data == b"*3\r\n$8\r\nREPLCONF\r\n$14\r\nlistening-port\r\n$4\r\n6380\r\n"
         mock_reader.readuntil.assert_called_once()
@@ -113,7 +113,7 @@ class TestReplicationClient:
         # Verify REPLCONF was written
         assert mock_writer.write.call_count == 1
         written_data = mock_writer.write.call_args[0][0]
-        
+
         # Verify RESP format: *3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$6\r\npsync2\r\n
         assert written_data == b"*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$6\r\npsync2\r\n"
         mock_reader.readuntil.assert_called_once()
@@ -122,7 +122,7 @@ class TestReplicationClient:
         """send_replconf methods raise error when not connected."""
         with pytest.raises(RuntimeError, match="Not connected to master"):
             asyncio.run(replication_client.send_replconf_listening_port(6380))
-        
+
         with pytest.raises(RuntimeError, match="Not connected to master"):
             asyncio.run(replication_client.send_replconf_capa())
 
@@ -137,7 +137,7 @@ class TestReplicationClient:
         mock_open_connection.return_value = (mock_reader, mock_writer)
 
         asyncio.run(replication_client.connect())
-        
+
         # Should raise error for bad response
         with pytest.raises(RuntimeError, match="Unexpected response"):
             asyncio.run(replication_client.send_replconf_listening_port(6380))
@@ -147,7 +147,9 @@ class TestReplicationClient:
         """send_psync sends correct command and reads FULLRESYNC response."""
         # Mock the connection
         mock_reader = AsyncMock()
-        mock_reader.readuntil = AsyncMock(return_value=b"+FULLRESYNC 8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb 0\r\n")
+        mock_reader.readuntil = AsyncMock(
+            return_value=b"+FULLRESYNC 8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb 0\r\n"
+        )
         mock_writer = MagicMock()
         mock_writer.drain = AsyncMock()
         mock_open_connection.return_value = (mock_reader, mock_writer)
@@ -158,7 +160,7 @@ class TestReplicationClient:
         # Verify PSYNC was written
         assert mock_writer.write.call_count == 1
         written_data = mock_writer.write.call_args[0][0]
-        
+
         # Verify RESP format: *3\r\n$5\r\nPSYNC\r\n$1\r\n?\r\n$2\r\n-1\r\n
         assert written_data == b"*3\r\n$5\r\nPSYNC\r\n$1\r\n?\r\n$2\r\n-1\r\n"
         mock_reader.readuntil.assert_called_once()
@@ -179,7 +181,7 @@ class TestReplicationClient:
         mock_open_connection.return_value = (mock_reader, mock_writer)
 
         asyncio.run(replication_client.connect())
-        
+
         # Should raise error for bad response
         with pytest.raises(RuntimeError, match="Unexpected response"):
             asyncio.run(replication_client.send_psync())
@@ -190,12 +192,14 @@ class TestReplicationClient:
         """start_handshake performs full handshake: PING + REPLCONF × 2 + PSYNC."""
         mock_reader = AsyncMock()
         # Mock responses: PONG, OK, OK, FULLRESYNC
-        mock_reader.readuntil = AsyncMock(side_effect=[
-            b"+PONG\r\n",
-            b"+OK\r\n",
-            b"+OK\r\n",
-            b"+FULLRESYNC 8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb 0\r\n"
-        ])
+        mock_reader.readuntil = AsyncMock(
+            side_effect=[
+                b"+PONG\r\n",
+                b"+OK\r\n",
+                b"+OK\r\n",
+                b"+FULLRESYNC 8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb 0\r\n",
+            ]
+        )
         mock_writer = MagicMock()
         mock_writer.drain = AsyncMock()
         mock_open_connection.return_value = (mock_reader, mock_writer)
@@ -205,30 +209,30 @@ class TestReplicationClient:
 
         # Verify connection was made
         mock_open_connection.assert_called_once_with("localhost", 6379)
-        
+
         # Verify commands were sent: PING + REPLCONF x 2 + PSYNC
         assert mock_writer.write.call_count == 4
-        
+
         # Verify PING
         ping_data = mock_writer.write.call_args_list[0][0][0]
         assert ping_data == b"*1\r\n$4\r\nPING\r\n"
-        
+
         # Verify REPLCONF listening-port
         replconf_port_data = mock_writer.write.call_args_list[1][0][0]
         assert b"REPLCONF" in replconf_port_data
         assert b"listening-port" in replconf_port_data
-        
+
         # Verify REPLCONF capa
         replconf_capa_data = mock_writer.write.call_args_list[2][0][0]
         assert b"REPLCONF" in replconf_capa_data
         assert b"psync2" in replconf_capa_data
-        
+
         # Verify PSYNC
         psync_data = mock_writer.write.call_args_list[3][0][0]
         assert b"PSYNC" in psync_data
         assert b"?" in psync_data
         assert b"-1" in psync_data
-        
+
         # Verify all responses were read (PONG + OK + OK + FULLRESYNC)
         assert mock_reader.readuntil.call_count == 4
 
@@ -257,7 +261,7 @@ class TestConnectToMaster:
             master_host="localhost",
             master_port=6379,
         )
-        
+
         # Verify handshake was started
         mock_client.start_handshake.assert_called_once()
 

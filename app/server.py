@@ -30,7 +30,7 @@ async def start_server(
     server = await asyncio.start_server(handler, host, port)
 
     addr = server.sockets[0].getsockname()
-    
+
     logger = logging.getLogger(__name__)
     logger.info(f"🚀 Redis server started on {addr}")
     logger.info("📡 Ready to accept connections...")

@@ -40,6 +40,6 @@ class TestReplconfCommand:
         # Test various possible subcommands
         result = asyncio.run(replconf_cmd.execute(["unknown-subcommand", "arg1", "arg2"]))
         assert result == {"ok": "OK"}
-        
+
         result = asyncio.run(replconf_cmd.execute(["some-future-command"]))
         assert result == {"ok": "OK"}

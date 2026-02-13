@@ -30,14 +30,12 @@ class TestFromReplicationFlag:
         mock_writer = MagicMock()
         mock_writer.write = MagicMock()
         mock_writer.drain = AsyncMock()
-        
+
         ReplicaManager.add_replica("test_replica", mock_reader, mock_writer)
-        
+
         # Execute a write command with from_replication=False
-        result = asyncio.run(
-            execute_command(["SET", "key", "value"], from_replication=False)
-        )
-        
+        result = asyncio.run(execute_command(["SET", "key", "value"], from_replication=False))
+
         # Verify command was propagated
         assert mock_writer.write.called
         assert result == {"ok": "OK"}
@@ -49,14 +47,12 @@ class TestFromReplicationFlag:
         mock_writer = MagicMock()
         mock_writer.write = MagicMock()
         mock_writer.drain = AsyncMock()
-        
+
         ReplicaManager.add_replica("test_replica", mock_reader, mock_writer)
-        
+
         # Execute a write command with from_replication=True
-        result = asyncio.run(
-            execute_command(["SET", "key", "value"], from_replication=True)
-        )
-        
+        result = asyncio.run(execute_command(["SET", "key", "value"], from_replication=True))
+
         # Verify command was NOT propagated
         assert not mock_writer.write.called
         assert result == {"ok": "OK"}
@@ -64,10 +60,8 @@ class TestFromReplicationFlag:
     def test_from_replication_updates_storage(self):
         """Test that from_replication commands still update storage."""
         # Execute SET with from_replication=True
-        asyncio.run(
-            execute_command(["SET", "foo", "bar"], from_replication=True)
-        )
-        
+        asyncio.run(execute_command(["SET", "foo", "bar"], from_replication=True))
+
         # Verify storage was updated by executing GET
         result = asyncio.run(execute_command(["GET", "foo"]))
         assert result == "bar"
@@ -76,13 +70,13 @@ class TestFromReplicationFlag:
         """Test that read commands work the same regardless of from_replication."""
         # Set a value first
         asyncio.run(execute_command(["SET", "key", "value"]))
-        
+
         # GET with from_replication=False
         result1 = asyncio.run(execute_command(["GET", "key"], from_replication=False))
-        
+
         # GET with from_replication=True
         result2 = asyncio.run(execute_command(["GET", "key"], from_replication=True))
-        
+
         # Both should return the same value
         assert result1 == "value"
         assert result2 == "value"
@@ -91,20 +85,17 @@ class TestFromReplicationFlag:
         """Test that replicas don't propagate even with from_replication=False."""
         # Configure as replica
         ServerConfig.initialize(
-            role=Role.SLAVE,
-            master_host="localhost",
-            master_port=6380,
-            listening_port=6379
+            role=Role.SLAVE, master_host="localhost", master_port=6380, listening_port=6379
         )
-        
+
         mock_reader = MagicMock()
         mock_writer = MagicMock()
         mock_writer.write = MagicMock()
         ReplicaManager.add_replica("test", mock_reader, mock_writer)
-        
+
         # Execute write command as replica
         asyncio.run(execute_command(["SET", "key", "value"], from_replication=False))
-        
+
         # Replica should not propagate (only master propagates)
         assert not mock_writer.write.called
 
@@ -126,15 +117,15 @@ class TestReplicaManager:
         mock_writer = MagicMock()
         mock_writer.write = MagicMock()
         mock_writer.drain = AsyncMock()
-        
+
         ReplicaManager.add_replica("replica1", mock_reader, mock_writer)
-        
+
         # Propagate a command
         asyncio.run(ReplicaManager.propagate_command("SET", ["foo", "bar"]))
-        
+
         # Check that write was called
         assert mock_writer.write.called
-        
+
         # Verify RESP array encoding
         call_args = mock_writer.write.call_args[0][0]
         assert b"*3\r\n" in call_args  # Array of 3 elements

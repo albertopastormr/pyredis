@@ -38,7 +38,7 @@ class TestInfoIntegration:
 
         # Encode response (should be bulk string)
         response = RESPEncoder.encode(result)
-        
+
         # Verify it's a valid RESP bulk string
         assert response.startswith(b"$")
         assert b"# Replication\nrole:master" in response
@@ -91,7 +91,7 @@ class TestInfoIntegration:
         request = b"*2\r\n$4\r\nINFO\r\n$11\r\nREPLICATION\r\n"
         command = RESPParser.parse(request)
         result = execute_command(command)
-        
+
         assert "role:master" in result
 
     def test_info_unsupported_section_integration(self):
@@ -101,7 +101,7 @@ class TestInfoIntegration:
 
         command = RESPParser.parse(request)
         result = execute_command(command)
-        
+
         # Should return empty string
         assert result == ""
 
@@ -112,14 +112,13 @@ class TestInfoIntegration:
     def test_info_response_parseable(self):
         """INFO response can be parsed back."""
         request = b"*2\r\n$4\r\nINFO\r\n$11\r\nreplication\r\n"
-        
+
         command = RESPParser.parse(request)
         result = execute_command(command)
         response = RESPEncoder.encode(result)
-        
+
         # Parse the response back
         parsed_result = RESPParser.parse(response)
         assert isinstance(parsed_result, str)
         assert "role:master" in parsed_result
         assert parsed_result == result
-

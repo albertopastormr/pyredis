@@ -29,11 +29,11 @@ class TestPsyncCommand:
         mock_get_config.return_value = ReplicationConfig(
             role=Role.MASTER,
             master_replid="8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb",
-            master_repl_offset=0
+            master_repl_offset=0,
         )
-        
+
         result = asyncio.run(psync_cmd.execute(["?", "-1"]))
-        
+
         # Should return fullresync dict with RDB data
         assert "fullresync" in result
         assert result["fullresync"]["replid"] == "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
@@ -45,13 +45,11 @@ class TestPsyncCommand:
         """PSYNC uses the master's replication ID from ServerConfig."""
         # Test with different replication ID
         mock_get_config.return_value = ReplicationConfig(
-            role=Role.MASTER,
-            master_replid="abc123def456",
-            master_repl_offset=100
+            role=Role.MASTER, master_replid="abc123def456", master_repl_offset=100
         )
-        
+
         result = asyncio.run(psync_cmd.execute(["?", "-1"]))
-        
+
         # Check fullresync response structure
         assert "fullresync" in result
         assert result["fullresync"]["replid"] == "abc123def456"
@@ -62,11 +60,11 @@ class TestPsyncCommand:
         # Test with no arguments
         with pytest.raises(ValueError, match="wrong number of arguments"):
             asyncio.run(psync_cmd.execute([]))
-        
+
         # Test with one argument
         with pytest.raises(ValueError, match="wrong number of arguments"):
             asyncio.run(psync_cmd.execute(["?"]))
-        
+
         # Test with too many arguments
         with pytest.raises(ValueError, match="wrong number of arguments"):
             asyncio.run(psync_cmd.execute(["?", "-1", "extra"]))
@@ -75,14 +73,11 @@ class TestPsyncCommand:
     def test_psync_accepts_any_arguments(self, mock_get_config, psync_cmd):
         """PSYNC accepts any replication ID and offset (not just ? -1)."""
         mock_get_config.return_value = ReplicationConfig(
-            role=Role.MASTER,
-            master_replid="test123",
-            master_repl_offset=0
+            role=Role.MASTER, master_replid="test123", master_repl_offset=0
         )
-        
+
         result = asyncio.run(psync_cmd.execute(["some-repl-id", "123"]))
-        
-        
+
         # Always returns FULLRESYNC for now
         assert "fullresync" in result
         assert result["fullresync"]["replid"] == "test123"

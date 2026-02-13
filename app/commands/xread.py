@@ -67,7 +67,9 @@ class XreadCommand(BaseCommand):
             raise ValueError(f"ERR wrong number of arguments for '{self.name}' command")
 
         if len(keys_and_ids) % 2 != 0:
-            raise ValueError("ERR Unbalanced 'xread' list of streams: for each stream key an ID must be specified.")
+            raise ValueError(
+                "ERR Unbalanced 'xread' list of streams: for each stream key an ID must be specified."
+            )
 
         mid = len(keys_and_ids) // 2
         keys = keys_and_ids[:mid]
@@ -114,7 +116,7 @@ class XreadCommand(BaseCommand):
         # Resolve '$' IDs using XINFO
         resolved_streams = []
         storage = get_storage()
-        
+
         for key, start_id in streams:
             if start_id == "$":
                 # Get last generated ID from XINFO
@@ -128,7 +130,7 @@ class XreadCommand(BaseCommand):
                 except Exception:
                     # On error (e.g. wrong type), keep "$" (storage.xread will likely fail or return nothing)
                     # Ideally we should fail early if wrong type, but storage.xread handles it
-                     resolved_id = "$" 
+                    resolved_id = "$"
                 resolved_streams.append((key, resolved_id))
             else:
                 resolved_streams.append((key, start_id))
@@ -165,7 +167,7 @@ class XreadCommand(BaseCommand):
                     done, pending = await asyncio.wait(
                         [asyncio.create_task(t) for t in wait_tasks],
                         timeout=block_timeout,
-                        return_when=asyncio.FIRST_COMPLETED
+                        return_when=asyncio.FIRST_COMPLETED,
                     )
                     # Cancel pending tasks
                     for task in pending:
@@ -180,7 +182,7 @@ class XreadCommand(BaseCommand):
                 # Wait indefinitely for first event
                 await asyncio.wait(
                     [asyncio.create_task(t) for t in wait_tasks],
-                    return_when=asyncio.FIRST_COMPLETED
+                    return_when=asyncio.FIRST_COMPLETED,
                 )
 
             # Re-query streams after notification

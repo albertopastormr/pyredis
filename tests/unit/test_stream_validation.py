@@ -18,11 +18,11 @@ class TestStreamEntryIdValidation:
     def test_parse_id_with_different_values(self):
         """Parse various valid IDs."""
         stream = RedisStream()
-        
+
         ms_time, seq_num = stream._parse_entry_id("0-1")
         assert ms_time == 0
         assert seq_num == 1
-        
+
         ms_time, seq_num = stream._parse_entry_id("123-456")
         assert ms_time == 123
         assert seq_num == 456
@@ -50,14 +50,14 @@ class TestStreamEntryIdValidation:
         stream = RedisStream()
         with pytest.raises(ValueError, match="Invalid stream ID"):
             stream._parse_entry_id("-1-0")
-        
+
         with pytest.raises(ValueError, match="Invalid stream ID"):
             stream._parse_entry_id("0--1")
 
     def test_xadd_first_entry_minimum_id(self):
         """First entry must be greater than 0-0."""
         stream = RedisStream()
-        
+
         # 0-0 should fail
         with pytest.raises(ValueError, match="must be greater than 0-0"):
             stream.xadd("0-0", {"field": "value"})
@@ -79,7 +79,7 @@ class TestStreamEntryIdValidation:
         """Second entry ID must be greater than first."""
         stream = RedisStream()
         stream.xadd("100-5", {"field": "value1"})
-        
+
         # Same ID should fail
         with pytest.raises(ValueError, match="equal or smaller"):
             stream.xadd("100-5", {"field": "value2"})
@@ -88,7 +88,7 @@ class TestStreamEntryIdValidation:
         """Second entry with smaller timestamp fails."""
         stream = RedisStream()
         stream.xadd("100-5", {"field": "value1"})
-        
+
         with pytest.raises(ValueError, match="equal or smaller"):
             stream.xadd("99-10", {"field": "value2"})
 
@@ -96,7 +96,7 @@ class TestStreamEntryIdValidation:
         """Second entry with same timestamp but smaller sequence fails."""
         stream = RedisStream()
         stream.xadd("100-5", {"field": "value1"})
-        
+
         with pytest.raises(ValueError, match="equal or smaller"):
             stream.xadd("100-4", {"field": "value2"})
 
@@ -104,7 +104,7 @@ class TestStreamEntryIdValidation:
         """Second entry with same timestamp and sequence fails."""
         stream = RedisStream()
         stream.xadd("100-5", {"field": "value1"})
-        
+
         with pytest.raises(ValueError, match="equal or smaller"):
             stream.xadd("100-5", {"field": "value2"})
 
@@ -113,7 +113,7 @@ class TestStreamEntryIdValidation:
         stream = RedisStream()
         stream.xadd("100-5", {"field": "value1"})
         result = stream.xadd("100-6", {"field": "value2"})
-        
+
         assert result == "100-6"
         assert len(stream.entries) == 2
 
@@ -122,25 +122,25 @@ class TestStreamEntryIdValidation:
         stream = RedisStream()
         stream.xadd("100-5", {"field": "value1"})
         result = stream.xadd("101-0", {"field": "value2"})
-        
+
         assert result == "101-0"
         assert len(stream.entries) == 2
 
     def test_xadd_multiple_entries_incremental(self):
         """Multiple entries with incremental IDs."""
         stream = RedisStream()
-        
+
         stream.xadd("0-1", {"a": "1"})
         stream.xadd("0-2", {"a": "2"})
         stream.xadd("1-0", {"a": "3"})
         stream.xadd("1-1", {"a": "4"})
         stream.xadd("100-0", {"a": "5"})
-        
+
         assert len(stream.entries) == 5
 
     def test_xadd_invalid_id_format(self):
         """Invalid ID format raises error."""
         stream = RedisStream()
-        
+
         with pytest.raises(ValueError, match="Invalid stream ID"):
             stream.xadd("invalid", {"field": "value"})

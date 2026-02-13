@@ -19,7 +19,7 @@ class TestDiscardCommand:
     def test_discard_without_multi_fails(self, discard_command):
         """DISCARD without MULTI raises error."""
         connection_id = ("127.0.0.1", 10003)
-        
+
         with pytest.raises(ValueError, match="ERR DISCARD without MULTI"):
             asyncio.run(discard_command.execute([], connection_id=connection_id))
 
@@ -31,7 +31,7 @@ class TestDiscardCommand:
     def test_discard_with_args_fails(self, discard_command):
         """DISCARD with arguments raises error."""
         connection_id = ("127.0.0.1", 10004)
-        
+
         with pytest.raises(ValueError, match="wrong number of arguments"):
             asyncio.run(discard_command.execute(["arg"], connection_id=connection_id))
 

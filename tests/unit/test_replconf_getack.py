@@ -12,10 +12,10 @@ class TestReplconfGetack:
         """Verify REPLCONF GETACK * uses correct RESP encoding."""
         # Encode the command
         encoded = RESPEncoder.encode(["REPLCONF", "GETACK", "*"])
-        
+
         # Verify exact RESP format
         assert encoded == b"*3\r\n$8\r\nREPLCONF\r\n$6\r\nGETACK\r\n$1\r\n*\r\n"
-        
+
         # Break down the format
         assert encoded.startswith(b"*3\r\n")  # Array with 3 elements
         assert b"$8\r\nREPLCONF\r\n" in encoded  # Command name
@@ -26,10 +26,10 @@ class TestReplconfGetack:
         """Verify REPLCONF GETACK can be parsed correctly."""
         # Raw RESP encoded command
         raw_data = b"*3\r\n$8\r\nREPLCONF\r\n$6\r\nGETACK\r\n$1\r\n*\r\n"
-        
+
         # Parse the command
         command = RESPParser.parse(raw_data)
-        
+
         # Verify parsed result
         assert isinstance(command, list)
         assert len(command) == 3
@@ -42,7 +42,7 @@ class TestReplconfGetack:
         # Encode the ACK response with offset 0
         encoded = RESPEncoder.encode(["REPLCONF", "ACK", "0"])
         assert encoded == b"*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n$1\r\n0\r\n"
-        
+
         # Encode the ACK response with offset 123
         encoded = RESPEncoder.encode(["REPLCONF", "ACK", "123"])
         assert encoded == b"*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n$3\r\n123\r\n"
@@ -51,10 +51,10 @@ class TestReplconfGetack:
         """Verify REPLCONF ACK can be parsed correctly."""
         # Raw RESP encoded ACK with offset 123
         raw_data = b"*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n$3\r\n123\r\n"
-        
+
         # Parse the command
         command = RESPParser.parse(raw_data)
-        
+
         # Verify parsed result
         assert isinstance(command, list)
         assert len(command) == 3
@@ -66,6 +66,6 @@ class TestReplconfGetack:
         """Calculate byte size of REPLCONF GETACK command."""
         # This is important for offset tracking
         encoded = RESPEncoder.encode(["REPLCONF", "GETACK", "*"])
-        
+
         # The byte size should be 37 bytes
         assert len(encoded) == 37

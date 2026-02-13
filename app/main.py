@@ -44,19 +44,17 @@ async def main() -> None:
         try:
             parts = args.replicaof.split()
             if len(parts) != 2:
-                raise ValueError(
-                    "Invalid --replicaof format. Expected: 'host port'"
-                )
+                raise ValueError("Invalid --replicaof format. Expected: 'host port'")
             master_host = parts[0]
             master_port = int(parts[1])
-            
+
             ServerConfig.initialize(
                 role=Role.SLAVE,
                 master_host=master_host,
                 master_port=master_port,
                 listening_port=args.port,
             )
-            
+
             # Start handshake with master in background
             asyncio.create_task(connect_to_master())
         except ValueError as e:
