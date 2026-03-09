@@ -24,6 +24,7 @@ from .psync import PsyncCommand
 from .replconf import ReplconfCommand
 from .rpush import RpushCommand
 from .set import SetCommand
+from .subscribe import SubscribeCommand
 from .type import TypeCommand
 from .wait import WaitCommand
 from .xadd import XaddCommand
@@ -103,6 +104,7 @@ CommandRegistry.register(XaddCommand)
 CommandRegistry.register(XrangeCommand)
 CommandRegistry.register(XreadCommand)
 CommandRegistry.register(XinfoCommand)
+CommandRegistry.register(SubscribeCommand)
 
 
 __all__ = [
@@ -131,4 +133,5 @@ __all__ = [
     "XrangeCommand",
     "XreadCommand",
     "XinfoCommand",
+    "SubscribeCommand",
 ]
