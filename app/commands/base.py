@@ -37,6 +37,16 @@ class BaseCommand(ABC):
         """
         return False
 
+    @property
+    def allowed_in_subscribed_mode(self) -> bool:
+        """
+        Whether this command is allowed to execute while a client is in subscribed mode.
+
+        By default, most commands are rejected. Only SUBSCRIBE, UNSUBSCRIBE,
+        PSUBSCRIBE, PUNSUBSCRIBE, PING, RESET, and QUIT are allowed.
+        """
+        return False
+
     @abstractmethod
     async def execute(self, args: list[str], connection_id: Any = None) -> Any:
         """

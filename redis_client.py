@@ -53,10 +53,12 @@ def main():
         print("-" * 60)
 
         show_raw = False
+        is_subscribed = False
 
         while True:
             try:
-                user_input = input("\nredis> ").strip()
+                prefix = "(subscribed mode) " if is_subscribed else ""
+                user_input = input(f"\n{prefix}redis> ").strip()
             except (EOFError, KeyboardInterrupt):
                 print("\n👋 Goodbye!")
                 break
@@ -87,6 +89,10 @@ def main():
                 if isinstance(parsed, str) and parsed.startswith("<Parse Error"):
                     print(f"❌ {parsed}")
                 else:
+                    # Check for subscribed mode
+                    if isinstance(parsed, list) and len(parsed) >= 1 and parsed[0] == "subscribe":
+                        is_subscribed = True
+
                     formatted = format_response(parsed)
                     print(formatted)
 

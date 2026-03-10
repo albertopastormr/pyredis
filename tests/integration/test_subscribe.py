@@ -68,3 +68,32 @@ class TestSubscribeIntegration:
         # Clean up
         remove_pubsub_context(client_a)
         remove_pubsub_context(client_b)
+
+    def test_subscribed_mode_restrictions(self):
+        """Test that only permitted commands run when in subscribed mode."""
+        client_id = "test_client_3"
+
+        # Enter subscribed mode
+        res_sub = execute_command(["SUBSCRIBE", "stage3"], connection_id=client_id)
+        assert res_sub == ["subscribe", "stage3", 1]
+
+        # Attempt to run a disallowed command (ECHO)
+        res_echo = execute_command(["ECHO", "hey"], connection_id=client_id)
+        # Should return error dictionary correctly mapped
+        assert "error" in res_echo
+        assert res_echo["error"].startswith("ERR Can't execute 'echo'")
+
+        # Attempt to run a disallowed command (SET)
+        res_set = execute_command(["SET", "key", "val"], connection_id=client_id)
+        assert "error" in res_set
+        assert res_set["error"].startswith("ERR Can't execute 'set'")
+
+        # Attempt an allowed command (PING)
+        res_ping = execute_command(["PING"], connection_id=client_id)
+        assert res_ping == {"ok": "PONG"}
+
+        # Another standard allowed command (SUBSCRIBE) works fine
+        res_sub2 = execute_command(["SUBSCRIBE", "stage3_alt"], connection_id=client_id)
+        assert res_sub2 == ["subscribe", "stage3_alt", 2]
+
+        remove_pubsub_context(client_id)

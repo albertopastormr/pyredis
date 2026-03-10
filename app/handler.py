@@ -6,7 +6,7 @@ from typing import Any
 
 from .commands import CommandRegistry
 from .config import ServerConfig
-from .pubsub import remove_pubsub_context
+from .pubsub import get_pubsub_context, remove_pubsub_context
 from .replica_manager import ReplicaManager
 from .resp import RESPEncoder, RESPParser
 from .transaction import get_transaction_context, remove_transaction_context
@@ -104,6 +104,15 @@ async def execute_command(
         raise ValueError(f"ERR unknown command '{command_name}'")
 
     command_obj = command_class()
+
+    # Subscribed mode check
+    if connection_id is not None:
+        pubsub_ctx = get_pubsub_context(connection_id)
+        if pubsub_ctx.channel_count > 0 and not command_obj.allowed_in_subscribed_mode:
+            # Replicate the exact format the Codecrafters tester allows
+            return {
+                "error": f"ERR Can't execute '{command_name.lower()}': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context"
+            }
 
     transaction_ctx = None
     if connection_id is not None:

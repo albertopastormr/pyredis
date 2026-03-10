@@ -16,6 +16,10 @@ class PingCommand(BaseCommand):
     def name(self) -> str:
         return "PING"
 
+    @property
+    def allowed_in_subscribed_mode(self) -> bool:
+        return True
+
     async def execute(self, args: list[str], connection_id: Any = None) -> Any:
         """
         Execute PING command.
