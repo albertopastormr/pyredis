@@ -21,6 +21,7 @@ from .lrange import LrangeCommand
 from .multi import MultiCommand
 from .ping import PingCommand
 from .psync import PsyncCommand
+from .publish import PublishCommand
 from .replconf import ReplconfCommand
 from .rpush import RpushCommand
 from .set import SetCommand
@@ -105,6 +106,7 @@ CommandRegistry.register(XrangeCommand)
 CommandRegistry.register(XreadCommand)
 CommandRegistry.register(XinfoCommand)
 CommandRegistry.register(SubscribeCommand)
+CommandRegistry.register(PublishCommand)
 
 
 __all__ = [
@@ -134,4 +136,5 @@ __all__ = [
     "XreadCommand",
     "XinfoCommand",
     "SubscribeCommand",
+    "PublishCommand",
 ]

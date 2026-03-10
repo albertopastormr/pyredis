@@ -63,6 +63,19 @@ def get_pubsub_context(connection_id: Any) -> PubSubContext:
     return _pubsub_contexts[connection_id]
 
 
+def get_subscriber_count(channel: str) -> int:
+    """
+    Get the number of active clients subscribed to a given channel.
+
+    Args:
+        channel: The channel name to query
+
+    Returns:
+        The number of connections currently subscribed to the channel
+    """
+    return sum(1 for ctx in _pubsub_contexts.values() if channel in ctx.subscribed_channels)
+
+
 def remove_pubsub_context(connection_id: Any) -> None:
     """
     Remove Pub/Sub context when connection closes.
