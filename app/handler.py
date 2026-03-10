@@ -108,7 +108,7 @@ async def execute_command(
     # Subscribed mode check
     if connection_id is not None:
         pubsub_ctx = get_pubsub_context(connection_id)
-        if pubsub_ctx.channel_count > 0 and not command_obj.allowed_in_subscribed_mode:
+        if pubsub_ctx.is_in_subscribed_mode and not command_obj.allowed_in_subscribed_mode:
             # Replicate the exact format the Codecrafters tester allows
             return {
                 "error": f"ERR Can't execute '{command_name.lower()}': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context"

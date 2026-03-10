@@ -90,10 +90,33 @@ class TestSubscribeIntegration:
 
         # Attempt an allowed command (PING)
         res_ping = execute_command(["PING"], connection_id=client_id)
-        assert res_ping == {"ok": "PONG"}
+        assert res_ping == ["pong", ""]
 
         # Another standard allowed command (SUBSCRIBE) works fine
         res_sub2 = execute_command(["SUBSCRIBE", "stage3_alt"], connection_id=client_id)
         assert res_sub2 == ["subscribe", "stage3_alt", 2]
 
         remove_pubsub_context(client_id)
+
+    def test_ping_in_subscribed_mode(self):
+        """Test that PING returns a different response format while in Subscribed Mode."""
+        client_unsub = "client_normal"
+        client_sub = "client_subscribed"
+
+        # 1) Normal Client
+        res_normal = execute_command(["PING"], connection_id=client_unsub)
+        assert res_normal == {"ok": "PONG"}
+
+        # 2) Subscribed Client
+        execute_command(["SUBSCRIBE", "stage4_chan"], connection_id=client_sub)
+
+        # Execute PING with no arguments
+        res_sub_ping_empty = execute_command(["PING"], connection_id=client_sub)
+        assert res_sub_ping_empty == ["pong", ""]
+
+        # Execute PING with an argument
+        res_sub_ping_arg = execute_command(["PING", "hello"], connection_id=client_sub)
+        assert res_sub_ping_arg == ["pong", "hello"]
+
+        remove_pubsub_context(client_unsub)
+        remove_pubsub_context(client_sub)

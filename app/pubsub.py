@@ -24,6 +24,11 @@ class PubSubContext:
         """Get the number of channels the client is subscribed to."""
         return len(self._subscribed_channels)
 
+    @property
+    def is_in_subscribed_mode(self) -> bool:
+        """Check if the client is currently in "subscribed mode"."""
+        return self.channel_count > 0
+
     def subscribe(self, channel: str) -> int:
         """
         Subscribe to a channel.
