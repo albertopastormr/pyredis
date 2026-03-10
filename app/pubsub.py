@@ -49,6 +49,20 @@ class PubSubContext:
         self._subscribed_channels.add(channel)
         return self.channel_count
 
+    def unsubscribe(self, channel: str) -> int:
+        """
+        Unsubscribe from a channel.
+
+        Args:
+            channel: The channel name to unsubscribe from
+
+        Returns:
+            The total number of subscribed channels remaining for this client
+        """
+        if channel in self._subscribed_channels:
+            self._subscribed_channels.remove(channel)
+        return self.channel_count
+
 
 # Global registry of Pub/Sub contexts per connection
 # Key: connection identifier (e.g., peername tuple)

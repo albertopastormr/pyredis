@@ -27,6 +27,7 @@ from .rpush import RpushCommand
 from .set import SetCommand
 from .subscribe import SubscribeCommand
 from .type import TypeCommand
+from .unsubscribe import UnsubscribeCommand
 from .wait import WaitCommand
 from .xadd import XaddCommand
 from .xinfo import XinfoCommand
@@ -107,6 +108,7 @@ CommandRegistry.register(XreadCommand)
 CommandRegistry.register(XinfoCommand)
 CommandRegistry.register(SubscribeCommand)
 CommandRegistry.register(PublishCommand)
+CommandRegistry.register(UnsubscribeCommand)
 
 
 __all__ = [
@@ -137,4 +139,5 @@ __all__ = [
     "XinfoCommand",
     "SubscribeCommand",
     "PublishCommand",
+    "UnsubscribeCommand",
 ]
