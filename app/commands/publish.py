@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from app.pubsub import get_subscriber_count
+from app.pubsub import publish_message
 
 from .base import BaseCommand
 
@@ -39,8 +39,8 @@ class PublishCommand(BaseCommand):
         """
         self.validate_args(args, min_args=2, max_args=2)
         channel = args[0]
-        # message = args[1] # Not yet used to actually deliver
+        message = args[1]
 
         # Evaluate and return subscriber count
-        count = get_subscriber_count(channel)
+        count = await publish_message(channel, message)
         return count

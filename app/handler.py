@@ -108,6 +108,11 @@ async def execute_command(
     # Subscribed mode check
     if connection_id is not None:
         pubsub_ctx = get_pubsub_context(connection_id)
+
+        # Inject the writer whenever we have it (allows message delivery)
+        if writer is not None and pubsub_ctx.writer is None:
+            pubsub_ctx.writer = writer
+
         if pubsub_ctx.is_in_subscribed_mode and not command_obj.allowed_in_subscribed_mode:
             # Replicate the exact format the Codecrafters tester allows
             return {

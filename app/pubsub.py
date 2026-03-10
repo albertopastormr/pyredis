@@ -1,6 +1,12 @@
 """Pub/Sub state management for Redis clients."""
 
+import asyncio
+import logging
 from typing import Any
+
+from app.resp import RESPEncoder
+
+logger = logging.getLogger(__name__)
 
 
 class PubSubContext:
@@ -13,6 +19,7 @@ class PubSubContext:
     def __init__(self):
         """Initialize Pub/Sub context."""
         self._subscribed_channels: set[str] = set()
+        self.writer: asyncio.StreamWriter | None = None
 
     @property
     def subscribed_channels(self) -> set[str]:
@@ -74,6 +81,35 @@ def get_subscriber_count(channel: str) -> int:
         The number of connections currently subscribed to the channel
     """
     return sum(1 for ctx in _pubsub_contexts.values() if channel in ctx.subscribed_channels)
+
+
+async def publish_message(channel: str, message: str) -> int:
+    """
+    Publish a message to all clients subscribed to a channel.
+
+    Args:
+        channel: The target channel.
+        message: The message string to deliver.
+
+    Returns:
+        The number of clients that successfully received the message.
+    """
+    # Craft the standard Array format: ["message", channel, message]
+    response_payload = ["message", channel, message]
+    response_bytes = RESPEncoder.encode(response_payload)
+
+    delivery_count = 0
+
+    for ctx in _pubsub_contexts.values():
+        if channel in ctx.subscribed_channels and ctx.writer is not None:
+            try:
+                ctx.writer.write(response_bytes)
+                await ctx.writer.drain()
+                delivery_count += 1
+            except Exception as e:
+                logger.error(f"Failed to publish to subscriber on channel '{channel}': {e}")
+
+    return delivery_count
 
 
 def remove_pubsub_context(connection_id: Any) -> None:
