@@ -6,6 +6,7 @@ from typing import Any
 
 from .commands import CommandRegistry
 from .config import ServerConfig
+from .pubsub import remove_pubsub_context
 from .replica_manager import ReplicaManager
 from .resp import RESPEncoder, RESPParser
 from .transaction import get_transaction_context, remove_transaction_context
@@ -60,6 +61,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
     finally:
         logger.info(f"[{addr}] Closing connection")
         remove_transaction_context(connection_id=addr)
+        remove_pubsub_context(connection_id=addr)
         ReplicaManager.remove_replica(addr)  # Clean up replica if it was registered
         writer.close()
         await writer.wait_closed()
