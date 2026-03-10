@@ -6,6 +6,7 @@ from typing import Any
 
 from .commands import CommandRegistry
 from .config import ServerConfig
+from .pubsub import get_pubsub_context, remove_pubsub_context
 from .replica_manager import ReplicaManager
 from .resp import RESPEncoder, RESPParser
 from .transaction import get_transaction_context, remove_transaction_context
@@ -60,6 +61,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
     finally:
         logger.info(f"[{addr}] Closing connection")
         remove_transaction_context(connection_id=addr)
+        remove_pubsub_context(connection_id=addr)
         ReplicaManager.remove_replica(addr)  # Clean up replica if it was registered
         writer.close()
         await writer.wait_closed()
@@ -102,6 +104,19 @@ async def execute_command(
         raise ValueError(f"ERR unknown command '{command_name}'")
 
     command_obj = command_class()
+
+    # Subscribed mode check
+    if connection_id is not None:
+        pubsub_ctx = get_pubsub_context(connection_id)
+
+        # Inject the writer whenever we have it (allows message delivery)
+        if writer is not None and pubsub_ctx.writer is None:
+            pubsub_ctx.writer = writer
+
+        if pubsub_ctx.is_in_subscribed_mode and not command_obj.allowed_in_subscribed_mode:
+            return {
+                "error": f"ERR Can't execute '{command_name.lower()}': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context"
+            }
 
     transaction_ctx = None
     if connection_id is not None:
