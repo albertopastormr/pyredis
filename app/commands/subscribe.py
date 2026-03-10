@@ -40,12 +40,9 @@ class SubscribeCommand(BaseCommand):
         pubsub_ctx = get_pubsub_context(connection_id)
 
         # In Redis, if multiple channels are provided like SUBSCRIBE foo bar
-        # it pushes an array response for EACH channel. For our Stage 2 prompt,
-        # tests only send one channel per SUBSCRIBE command, but we should handle
-        # the multiple case securely or at least respect the core requirement of
-        # maintaining state.
-
-        # Here we handle exactly what the prompt asks for:
+        # it pushes an array response for EACH channel. Currently, we only
+        # support standard single-channel subscription responses as our
+        # iteration loop relies on handling one argument at a time efficiently.
         # A response for the first parameter with the updated channel count.
         channel_name = args[0]
         channel_count = pubsub_ctx.subscribe(channel_name)

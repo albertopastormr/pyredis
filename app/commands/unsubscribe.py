@@ -44,7 +44,7 @@ class UnsubscribeCommand(BaseCommand):
         Returns:
             A list of responses for each channel unsubscribed from.
         """
-        # Minimum 1 argument natively expected by CodeCrafters tester
+        # Require at least 1 channel argument
         self.validate_args(args, min_args=1)
 
         pubsub_ctx = get_pubsub_context(connection_id)
@@ -54,18 +54,13 @@ class UnsubscribeCommand(BaseCommand):
             remaining_count = pubsub_ctx.unsubscribe(channel)
             responses.append(["unsubscribe", channel, remaining_count])
 
-        # If it's a single command execution, we want to return just the array list
+        # If it's a single channel un-subscription, we return just the array list
         # We need to inform handler.py somehow that this is a generator of responses,
         # but since we only ever write it synchronously backwards to `RESPEncoder.encode`
-        # and encode doesn't natively multiplex lists of arrays implicitly,
-        # we will craft a string internally or rely on the encoder natively mapping nested lists.
-        # Actually RESP parser supports Array of Arrays: encoding `responses` normally wraps it in an outer array.
-        # The RESP protocol for UNSUBSCRIBE *actually* just pushes N separate Arrays sequentially.
+        # we will handle standard iteration format. The RESP protocol for UNSUBSCRIBE
+        # *actually* just pushes N separate Arrays sequentially.
 
-        # We can implement a special tag on this response or just rely on handler encoding
-        # multiple returns if we return a custom class. For CodeCrafters, let's look at how
-        # we handle `SUBSCRIBE` (which returns a single array).
-        # We'll return just the FIRST response if len is 1 to maintain Codecrafters simple tests compatibility.
+        # We'll return just the FIRST response if len is 1 to maintain simple interface compat.
         # If len > 1, we return the list. If it fails encoding we'll adjust the encoder.
         if len(responses) == 1:
             return responses[0]

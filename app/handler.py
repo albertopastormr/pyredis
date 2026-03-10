@@ -114,7 +114,6 @@ async def execute_command(
             pubsub_ctx.writer = writer
 
         if pubsub_ctx.is_in_subscribed_mode and not command_obj.allowed_in_subscribed_mode:
-            # Replicate the exact format the Codecrafters tester allows
             return {
                 "error": f"ERR Can't execute '{command_name.lower()}': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context"
             }

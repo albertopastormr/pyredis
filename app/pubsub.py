@@ -47,6 +47,9 @@ class PubSubContext:
             The total number of subscribed channels for this client
         """
         self._subscribed_channels.add(channel)
+        if channel not in _channels:
+            _channels[channel] = set()
+        _channels[channel].add(self)
         return self.channel_count
 
     def unsubscribe(self, channel: str) -> int:
@@ -61,12 +64,19 @@ class PubSubContext:
         """
         if channel in self._subscribed_channels:
             self._subscribed_channels.remove(channel)
+            if channel in _channels:
+                _channels[channel].discard(self)
+                if not _channels[channel]:
+                    del _channels[channel]
         return self.channel_count
 
 
-# Global registry of Pub/Sub contexts per connection
+# Global registries
 # Key: connection identifier (e.g., peername tuple)
 _pubsub_contexts: dict[Any, PubSubContext] = {}
+
+# Key: channel name, Value: set of PubSubContexts currently subscribed
+_channels: dict[str, set[PubSubContext]] = {}
 
 
 def get_pubsub_context(connection_id: Any) -> PubSubContext:
@@ -94,7 +104,7 @@ def get_subscriber_count(channel: str) -> int:
     Returns:
         The number of connections currently subscribed to the channel
     """
-    return sum(1 for ctx in _pubsub_contexts.values() if channel in ctx.subscribed_channels)
+    return len(_channels.get(channel, set()))
 
 
 async def publish_message(channel: str, message: str) -> int:
@@ -113,15 +123,19 @@ async def publish_message(channel: str, message: str) -> int:
     response_bytes = RESPEncoder.encode(response_payload)
 
     delivery_count = 0
+    subscribers = _channels.get(channel, set())
 
-    for ctx in _pubsub_contexts.values():
-        if channel in ctx.subscribed_channels and ctx.writer is not None:
+    for ctx in list(subscribers):  # Copy list to safely iterate while it might change
+        if ctx.writer is not None:
             try:
+                # writer.write is synchronous, writer.drain is async
                 ctx.writer.write(response_bytes)
                 await ctx.writer.drain()
                 delivery_count += 1
             except Exception as e:
                 logger.error(f"Failed to publish to subscriber on channel '{channel}': {e}")
+                # Optional: Force unsubscribe if connection is totally broken
+                # ctx.unsubscribe(channel)
 
     return delivery_count
 
@@ -134,4 +148,8 @@ def remove_pubsub_context(connection_id: Any) -> None:
         connection_id: Unique identifier for the connection
     """
     if connection_id in _pubsub_contexts:
+        ctx = _pubsub_contexts[connection_id]
+        # Clean up subscriptions from the global channels map
+        for channel in list(ctx.subscribed_channels):
+            ctx.unsubscribe(channel)
         del _pubsub_contexts[connection_id]
